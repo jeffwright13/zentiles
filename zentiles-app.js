@@ -100,9 +100,14 @@ class Board {
     getFullRows() {
         const fullRows = new Set();
         for (let y = 0; y < this.height; y++) {
-            if (this.occupied.every((col, x) => this.occupied[x][y])) {
-                fullRows.add(y);
+            let rowFull = true;
+            for (let x = 0; x < this.width; x++) {
+                if (!this.occupied[x][y]) {
+                    rowFull = false;
+                    break;
+                }
             }
+            if (rowFull) fullRows.add(y);
         }
         return fullRows;
     }
@@ -110,7 +115,7 @@ class Board {
     getFullColumns() {
         const fullCols = new Set();
         for (let x = 0; x < this.width; x++) {
-            if (this.occupied.every((col, y) => this.occupied[x][y])) {
+            if (this.occupied[x].every(cell => cell)) {
                 fullCols.add(x);
             }
         }
@@ -181,6 +186,10 @@ class GameEngine {
     constructor(state = null) {
         this.state = state || new GameState();
         this.undoHistory = [];
+        
+        if (!state) {
+            this.spawnPieces();
+        }
     }
 
     placePiece(origin) {
@@ -323,12 +332,15 @@ class GameEngine {
     }
 
     spawnPieces() {
-        this.spawnNextPiece();
-        // Clone for currentPiece
-        const next = this.state.nextPiece;
-        const piece = new Piece(next.shapeIndex);
-        piece.cells = JSON.parse(JSON.stringify(next.cells));
-        this.state.currentPiece = piece;
+        // Generate first piece (at least 2 cells)
+        const unlockedCount = this.state.getUnlockedPieceCount();
+        const pieceIndex = 1 + Math.floor(Math.random() * (unlockedCount - 1));
+        const firstPiece = new Piece(pieceIndex);
+        firstPiece.rotate(Math.floor(Math.random() * 4));
+        if (Math.random() < 0.5) firstPiece.reflect();
+        this.state.currentPiece = firstPiece;
+        
+        // Generate second piece using normal spawn logic
         this.spawnNextPiece();
     }
 
@@ -375,7 +387,7 @@ class ZenTilesApp {
         this.engine = new GameEngine();
         this.themeManager = getThemeManager();
         
-        this.cellSize = 52;
+        this.cellSize = 68;
         this.hoverPos = null;
         this.validPlacements = [];
         this.showHints = false;
@@ -621,11 +633,17 @@ class ZenTilesApp {
     }
 
     placePiece(origin) {
+        const oldBoardSize = this.engine.state.board.width;
         const result = this.engine.placePiece(origin);
         
         if (result === false) {
             this.showMessage('Cannot place piece there', 'warning');
             return;
+        }
+        
+        // Check if board resized after level up
+        if (this.engine.state.board.width !== oldBoardSize) {
+            this.setupCanvas();
         }
         
         if (result && result.cleared > 0) {

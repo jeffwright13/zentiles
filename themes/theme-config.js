@@ -95,9 +95,9 @@ export const THEMES = {
             pieceColors: ['#228B22', '#32CD32', '#90EE90', '#006400']
         },
         backgrounds: [
-            { url: 'https://images.unsplash.com/photo-1590089415225-401ed6f9db8e?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Misty hills' },
+            { url: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Misty forest path' },
             { url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Forest light' },
-            { url: 'https://images.unsplash.com/photo-1518173946687-a4c036bc9e89?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Green valley' },
+            { url: 'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Emerald forest' },
             { url: 'https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Mountain lake' }
         ],
         audio: {
@@ -131,7 +131,7 @@ export const THEMES = {
         },
         backgrounds: [
             { url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1920&q=80', alt: 'Desert road landscape' },
-            { url: 'https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=1920&q=80', alt: 'Prairie grassland' },
+            { url: 'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=1920&q=80&blur=50', alt: 'Desert grassland' },
             { url: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1920&q=80', alt: 'Starry night sky' },
             { url: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1920&q=80', alt: 'Red rock desert' }
         ],
