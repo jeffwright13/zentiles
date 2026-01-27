@@ -32,8 +32,8 @@ export const THEMES = {
         ],
         audio: {
             tracks: [
-                { name: 'Meditation Music', url: './assets/audio/meditation-yoga-relaxing-music.mp3', duration: 300 },
-                { name: 'River & Birds', url: './assets/audio/river_and_birds.mp3', duration: 60 }
+                { name: 'Meditation Music', url: '/assets/audio/meditation-yoga-relaxing-music.mp3', duration: 300 },
+                { name: 'River & Birds', url: '/assets/audio/river_and_birds.mp3', duration: 60 }
             ]
         },
         transitionDuration: 15000
@@ -67,8 +67,8 @@ export const THEMES = {
         ],
         audio: {
             tracks: [
-                { name: 'Lunar New Year', url: './assets/audio/lunar_new_year.mp3', duration: 180 },
-                { name: 'Meditation Music', url: './assets/audio/meditation-yoga-relaxing-music.mp3', duration: 300 }
+                { name: 'Lunar New Year', url: '/assets/audio/lunar_new_year.mp3', duration: 180 },
+                { name: 'Meditation Music', url: '/assets/audio/meditation-yoga-relaxing-music.mp3', duration: 300 }
             ]
         },
         transitionDuration: 18000
@@ -102,8 +102,8 @@ export const THEMES = {
         ],
         audio: {
             tracks: [
-                { name: 'River & Birds', url: './assets/audio/river_and_birds.mp3', duration: 60 },
-                { name: 'Sea Waves', url: './assets/audio/sea_waves.mp3', duration: 120 }
+                { name: 'River & Birds', url: '/assets/audio/river_and_birds.mp3', duration: 60 },
+                { name: 'Sea Waves', url: '/assets/audio/sea_waves.mp3', duration: 120 }
             ]
         },
         transitionDuration: 20000
@@ -137,8 +137,8 @@ export const THEMES = {
         ],
         audio: {
             tracks: [
-                { name: 'Sea Waves', url: './assets/audio/sea_waves.mp3', duration: 120 },
-                { name: 'Meditation Music', url: './assets/audio/meditation-yoga-relaxing-music.mp3', duration: 300 }
+                { name: 'Sea Waves', url: '/assets/audio/sea_waves.mp3', duration: 120 },
+                { name: 'Meditation Music', url: '/assets/audio/meditation-yoga-relaxing-music.mp3', duration: 300 }
             ]
         },
         transitionDuration: 17000

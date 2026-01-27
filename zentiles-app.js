@@ -431,23 +431,71 @@ class ZenTilesApp {
         document.getElementById('undoBtn').addEventListener('click', () => this.undo());
         document.getElementById('clearBtn').addEventListener('click', () => this.clearLevel());
         document.getElementById('cleanBtn').addEventListener('click', () => this.cleanClear());
-        document.getElementById('hintsBtn').addEventListener('click', () => this.toggleHints());
-        document.getElementById('newGameBtn').addEventListener('click', () => this.newGame());
+        document.getElementById('newGameBtn').addEventListener('click', () => {
+            document.getElementById('settingsPanel')?.classList.remove('active');
+            this.newGame();
+        });
 
         // Swap slots
         document.querySelectorAll('.swap-slot').forEach((slot, index) => {
             slot.addEventListener('click', () => this.swapPiece(index));
         });
 
-        // Theme button
-        document.getElementById('themeBtn').addEventListener('click', () => this.openThemeModal());
+        // Settings panel
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsPanel.classList.toggle('active');
+        });
+        
+        // Close settings when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+                settingsPanel.classList.remove('active');
+            }
+        });
+
+        // Theme button (inside settings)
+        document.getElementById('themeBtn').addEventListener('click', () => {
+            settingsPanel.classList.remove('active');
+            this.openThemeModal();
+        });
         document.getElementById('closeThemeModal').addEventListener('click', () => this.closeThemeModal());
         document.getElementById('themeModal').addEventListener('click', (e) => {
             if (e.target.id === 'themeModal') this.closeThemeModal();
         });
 
+        // Tooltips toggle
+        const tooltipsToggle = document.getElementById('tooltipsToggle');
+        this.tooltipsEnabled = true;
+        tooltipsToggle.addEventListener('click', () => {
+            this.tooltipsEnabled = !this.tooltipsEnabled;
+            tooltipsToggle.classList.toggle('active', this.tooltipsEnabled);
+            this.updateTooltips();
+        });
+
+        // Hints toggle
+        const hintsToggle = document.getElementById('hintsToggle');
+        hintsToggle.classList.toggle('active', this.showHints);
+        hintsToggle.addEventListener('click', () => this.toggleHints());
+
         // Listen for theme changes
         this.themeManager.on('themeChange', () => this.render());
+    }
+
+    updateTooltips() {
+        const elements = document.querySelectorAll('[title]');
+        elements.forEach(el => {
+            if (this.tooltipsEnabled) {
+                if (el.dataset.originalTitle) {
+                    el.title = el.dataset.originalTitle;
+                }
+            } else {
+                el.dataset.originalTitle = el.title;
+                el.title = '';
+            }
+        });
     }
 
     setupThemeUI() {
@@ -484,8 +532,10 @@ class ZenTilesApp {
         const nextTrackBtn = document.getElementById('nextTrackBtn');
         const repeatBtn = document.getElementById('repeatBtn');
         const volumeSlider = document.getElementById('volumeSlider');
-        const timelineSlider = document.getElementById('timelineSlider');
         const trackName = document.getElementById('trackName');
+
+        // Guard against missing UI elements (prevents init from failing)
+        if (!playPauseBtn || !prevTrackBtn || !nextTrackBtn || !volumeSlider || !trackName) return;
 
         // Play/Pause
         playPauseBtn.addEventListener('click', () => {
@@ -544,17 +594,14 @@ class ZenTilesApp {
         });
 
         // Repeat Toggle
-        repeatBtn.addEventListener('click', () => {
-            this.isRepeat = !this.isRepeat;
-            this.themeManager.setRepeat(this.isRepeat);
+        if (repeatBtn) {
             repeatBtn.classList.toggle('active', this.isRepeat);
-        });
-
-        // Timeline seek
-        timelineSlider.addEventListener('input', (e) => {
-            const percent = parseInt(e.target.value) / 100;
-            this.themeManager.seekTo(percent);
-        });
+            repeatBtn.addEventListener('click', () => {
+                this.isRepeat = !this.isRepeat;
+                this.themeManager.setRepeat(this.isRepeat);
+                repeatBtn.classList.toggle('active', this.isRepeat);
+            });
+        }
 
         // Volume
         volumeSlider.addEventListener('input', (e) => {
@@ -571,23 +618,9 @@ class ZenTilesApp {
     updateAudioDisplay() {
         const trackInfo = this.themeManager.getAudioState();
         const trackName = document.getElementById('trackName');
-        const currentTimeEl = document.getElementById('currentTime');
-        const durationEl = document.getElementById('duration');
-        const timelineSlider = document.getElementById('timelineSlider');
         
-        if (trackInfo) {
-            if (trackInfo.name && this.isPlaying) {
-                trackName.textContent = trackInfo.name;
-            }
-            
-            // Update timeline
-            currentTimeEl.textContent = this.formatTime(trackInfo.currentTime || 0);
-            durationEl.textContent = this.formatTime(trackInfo.duration || 0);
-            
-            if (trackInfo.duration > 0 && !this.isSeeking) {
-                const percent = (trackInfo.currentTime / trackInfo.duration) * 100;
-                timelineSlider.value = percent;
-            }
+        if (trackInfo && trackInfo.name && this.isPlaying) {
+            trackName.textContent = trackInfo.name;
         }
     }
 
@@ -705,14 +738,10 @@ class ZenTilesApp {
 
     toggleHints() {
         this.showHints = !this.showHints;
-        const hintsBtn = document.getElementById('hintsBtn');
-        hintsBtn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-                <line x1="9" y1="21" x2="15" y2="21"/>
-            </svg>
-            Hints: ${this.showHints ? 'ON' : 'OFF'}
-        `;
+        const hintsToggle = document.getElementById('hintsToggle');
+        if (hintsToggle) {
+            hintsToggle.classList.toggle('active', this.showHints);
+        }
         this.render();
     }
 
@@ -720,14 +749,26 @@ class ZenTilesApp {
         const state = this.engine.state;
         
         document.getElementById('level').textContent = state.level;
-        document.getElementById('lines').textContent = state.linesClearedTotal;
         document.getElementById('remaining').textContent = state.getLinesRemaining();
-        document.getElementById('placed').textContent = state.piecesPlaced;
-        document.getElementById('undo').textContent = state.undoCharges;
-        document.getElementById('clean').textContent = state.cleanClearCharges;
         
-        document.getElementById('undoBtn').disabled = state.undoCharges <= 0;
-        document.getElementById('cleanBtn').disabled = state.cleanClearCharges <= 0;
+        const undoBtn = document.getElementById('undoBtn');
+        const cleanBtn = document.getElementById('cleanBtn');
+        undoBtn.disabled = state.undoCharges <= 0;
+        cleanBtn.disabled = state.cleanClearCharges <= 0;
+
+        undoBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+            </svg>
+            Undo (${state.undoCharges})
+        `;
+        
+        cleanBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+            </svg>
+            Clean Clear (${state.cleanClearCharges})
+        `;
         
         const unlockedSlots = Math.floor(state.level / 10);
         document.querySelectorAll('.swap-slot').forEach((slot, index) => {
