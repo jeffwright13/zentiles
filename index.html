@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Urban Ivy - Web Game</title>
+    <title>ZenTiles - Contemplative Puzzle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --theme-primary: #C41E3A;
+            --theme-secondary: #2D4A3E;
+            --theme-accent: #F5F5DC;
+            --theme-text: #1A1A2E;
+            --theme-text-light: #F8F8F8;
+            --theme-overlay: rgba(26, 26, 46, 0.45);
+            --theme-card-bg: rgba(45, 74, 62, 0.2);
+            --theme-card-border: rgba(196, 30, 58, 0.3);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,91 +26,253 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            color: var(--theme-text-light);
+            overflow-x: hidden;
         }
 
         .game-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            max-width: 900px;
+            background: var(--theme-card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--theme-card-border);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 920px;
             width: 100%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            position: relative;
+            z-index: 10;
         }
 
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
         h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: 2.8em;
+            letter-spacing: 0.08em;
+            color: var(--theme-text-light);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-card-border);
+            color: var(--theme-text-light);
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .icon-btn:hover {
+            background: var(--theme-primary);
+            transform: translateY(-2px);
+        }
+
+        .icon-btn.active {
+            background: var(--theme-primary);
+        }
+
+        .subtitle {
+            font-weight: 300;
+            font-size: 0.95em;
+            opacity: 0.8;
+            letter-spacing: 0.05em;
         }
 
         .game-info {
             display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
+            justify-content: center;
+            margin-bottom: 24px;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px;
         }
 
         .info-item {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-card-border);
+            color: var(--theme-text-light);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-weight: 400;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .info-item:hover {
-            transform: translateY(-2px);
+        .info-item .label {
+            opacity: 0.7;
+            font-size: 0.85em;
+        }
+
+        .info-item .value {
+            font-weight: 500;
+            font-size: 1.1em;
         }
 
         .game-area {
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            gap: 30px;
-            margin-bottom: 20px;
+            gap: 28px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
         }
 
         .board-container {
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        canvas {
-            border: 3px solid #333;
-            border-radius: 10px;
+        .board-message {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+
+        #gameCanvas {
+            border: 2px solid var(--theme-card-border);
+            border-radius: 16px;
             cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            transition: box-shadow 0.3s ease;
+        }
+
+        #gameCanvas:hover {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 180px;
+            max-width: 200px;
+        }
+
+        .piece-displays {
+            display: flex;
+            gap: 8px;
         }
 
         .piece-preview {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid #333;
+            flex: 1;
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-card-border);
             border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 8px;
         }
 
         .piece-preview h3 {
-            margin-bottom: 15px;
-            color: #333;
+            margin-bottom: 6px;
+            color: var(--theme-text-light);
             text-align: center;
+            font-weight: 400;
+            font-size: 0.65em;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        #currentPieceCanvas,
+        #nextPieceCanvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 4px;
+        }
+
+        .swap-section {
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-card-border);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .swap-section h4 {
+            margin: 0 0 8px 0;
+            color: var(--theme-text-light);
+            text-align: center;
+            font-weight: 400;
+            font-size: 0.75em;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        .swap-slots {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .swap-slot {
+            width: 38px;
+            height: 38px;
+            border: 2px solid var(--theme-text-light);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .swap-slot:hover:not(.disabled) {
+            background: var(--theme-primary);
+            transform: scale(1.08);
+            border-color: var(--theme-primary);
+        }
+
+        .swap-slot.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .slot-label {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--theme-text-light);
+            opacity: 0.8;
+        }
+
+        .swap-slot.has-piece .slot-label {
+            display: none;
         }
 
         .controls {
@@ -106,84 +282,317 @@
             flex-wrap: wrap;
         }
 
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+        .btn {
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-card-border);
+            color: var(--theme-text-light);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 400;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .swap-slots {
+            transition: all 0.3s ease;
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            justify-content: center;
+            align-items: center;
+            gap: 8px;
         }
 
-        .swap-slot {
-            width: 60px;
-            height: 60px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.8);
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
+        .btn:hover:not(:disabled) {
+            background: var(--theme-primary);
+            border-color: var(--theme-primary);
+            transform: translateY(-2px);
         }
 
-        .swap-slot:hover:not(.disabled) {
-            background: rgba(102, 126, 234, 0.2);
-            transform: scale(1.05);
-        }
-
-        .swap-slot.disabled {
-            opacity: 0.3;
+        .btn:disabled {
+            opacity: 0.4;
             cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--theme-primary);
+            border-color: var(--theme-primary);
         }
 
         .message {
             text-align: center;
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: all 0.3s;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 400;
+            font-size: 0.85em;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
         }
 
         .message.info {
-            background: rgba(52, 152, 219, 0.1);
-            color: #2980b9;
-            border: 2px solid #3498db;
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .message.warning {
-            background: rgba(241, 196, 15, 0.1);
-            color: #f39c12;
-            border: 2px solid #f1c40f;
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .message.success {
-            background: rgba(46, 204, 113, 0.1);
-            color: #27ae60;
-            border: 2px solid #2ecc71;
+            background: rgba(34, 197, 94, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
+        /* Theme Selector Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: var(--theme-card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--theme-card-border);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 500px;
+            width: 90%;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6em;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--theme-text-light);
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .theme-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid transparent;
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .theme-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .theme-option.active {
+            border-color: var(--theme-primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-color {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-name {
+            font-weight: 500;
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+
+        .theme-desc {
+            font-size: 0.75em;
+            opacity: 0.7;
+            line-height: 1.4;
+        }
+
+        /* Audio Controls */
+        .audio-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-card-border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .audio-main {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .audio-left {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .audio-controls .track-name {
+            font-size: 0.7em;
+            opacity: 0.9;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--theme-card-border);
+        }
+
+        .audio-buttons {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            flex-wrap: nowrap;
+        }
+
+        .icon-btn.small {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border-radius: 5px;
+            padding: 0;
+        }
+
+        .icon-btn.small svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .icon-btn.small.active {
+            background: var(--theme-primary);
+            border-color: var(--theme-primary);
+        }
+
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-top: 6px;
+            border-top: 1px solid var(--theme-card-border);
+        }
+
+        .time-display {
+            font-size: 0.65em;
+            opacity: 0.7;
+            min-width: 28px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timeline-slider {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--theme-text-light);
+            cursor: pointer;
+        }
+
+        .timeline-slider::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--theme-text-light);
+            cursor: pointer;
+            border: none;
+        }
+
+        .volume-slider-vertical {
+            width: 4px;
+            height: 60px;
+            -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
+            writing-mode: vertical-lr;
+            direction: rtl;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider-vertical::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--theme-primary);
+            cursor: pointer;
+        }
+
+        .volume-slider-vertical::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--theme-primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .game-container {
                 padding: 20px;
@@ -193,62 +602,214 @@
                 font-size: 2em;
             }
 
+            .title-row {
+                flex-direction: column;
+                gap: 12px;
+            }
+
             .game-area {
                 flex-direction: column;
                 align-items: center;
             }
 
-            canvas {
+            .game-info {
+                gap: 8px;
+            }
+
+            .info-item {
+                padding: 8px 12px;
+                font-size: 0.8em;
+            }
+
+            #gameCanvas {
                 max-width: 100%;
                 height: auto;
+            }
+
+            .controls {
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 10px 14px;
+                font-size: 0.85em;
+            }
+
+            .theme-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Theme Selector Modal -->
+    <div id="themeModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Theme</h2>
+                <button class="modal-close" id="closeThemeModal">&times;</button>
+            </div>
+            <div class="theme-grid" id="themeGrid">
+                <!-- Theme options populated by JS -->
+            </div>
+        </div>
+    </div>
+
     <div class="game-container">
         <header>
-            <h1>🌿 Urban Ivy</h1>
-            <p>Place pieces to clear rows and columns!</p>
+            <div class="title-row">
+                <h1>ZenTiles</h1>
+                <div class="header-controls">
+                    <button class="icon-btn" id="themeBtn" title="Change Theme">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p class="subtitle">Place pieces mindfully to clear rows and columns</p>
         </header>
 
         <section class="game-info">
-            <div class="info-item">Level: <span id="level">1</span></div>
-            <div class="info-item">Lines: <span id="lines">0</span></div>
-            <div class="info-item">Remaining: <span id="remaining">25</span></div>
-            <div class="info-item">Placed: <span id="placed">0</span></div>
-            <div class="info-item">Undo: <span id="undo">3</span></div>
-            <div class="info-item">Clean Clear: <span id="clean">1</span></div>
+            <div class="info-item">
+                <span class="label">Level</span>
+                <span class="value" id="level">1</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Lines</span>
+                <span class="value" id="lines">0</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Remaining</span>
+                <span class="value" id="remaining">25</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Placed</span>
+                <span class="value" id="placed">0</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Undo</span>
+                <span class="value" id="undo">3</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Clean</span>
+                <span class="value" id="clean">1</span>
+            </div>
         </section>
 
         <main class="game-area">
             <div class="board-container">
                 <canvas id="gameCanvas"></canvas>
+                <div id="message" class="board-message message" style="display: none;"></div>
             </div>
             
-            <div class="piece-preview">
-                <h3>Next Piece</h3>
-                <canvas id="nextPieceCanvas" width="120" height="120"></canvas>
-                
-                <div class="swap-slots">
-                    <div class="swap-slot" data-slot="0" title="Swap Slot 1"></div>
-                    <div class="swap-slot" data-slot="1" title="Swap Slot 2"></div>
-                    <div class="swap-slot" data-slot="2" title="Swap Slot 3"></div>
+            <div class="side-panel">
+                <div class="piece-displays">
+                    <div class="piece-preview">
+                        <h3>CURRENT</h3>
+                        <canvas id="currentPieceCanvas" width="80" height="80"></canvas>
+                    </div>
+                    <div class="piece-preview">
+                        <h3>NEXT</h3>
+                        <canvas id="nextPieceCanvas" width="80" height="80"></canvas>
+                    </div>
+                </div>
+                    
+                <div class="swap-section">
+                    <h4>SWAP SLOTS</h4>
+                    <div class="swap-slots">
+                        <div class="swap-slot" data-slot="0" title="Click to swap piece">
+                            <span class="slot-label">1</span>
+                        </div>
+                        <div class="swap-slot" data-slot="1" title="Click to swap piece">
+                            <span class="slot-label">2</span>
+                        </div>
+                        <div class="swap-slot" data-slot="2" title="Click to swap piece">
+                            <span class="slot-label">3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="audio-controls" id="audioControls">
+                    <div class="audio-main">
+                        <div class="audio-left">
+                            <span class="track-name" id="trackName">Click to play</span>
+                            <div class="audio-buttons">
+                                <button class="icon-btn small" id="prevTrackBtn" title="Previous Track">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <rect x="5" y="4" width="2" height="16"/>
+                                        <polygon points="19 4 9 12 19 20 19 4"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn small" id="playPauseBtn" title="Play/Pause">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn small" id="nextTrackBtn" title="Next Track">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="5 4 15 12 5 20 5 4"/>
+                                        <rect x="17" y="4" width="2" height="16"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn small" id="repeatBtn" title="Repeat">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 2l4 4-4 4"/>
+                                        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                                        <path d="M7 22l-4-4 4-4"/>
+                                        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <input type="range" class="volume-slider-vertical" id="volumeSlider" min="0" max="100" value="30" title="Volume" orient="vertical">
+                    </div>
+                    <div class="timeline-row">
+                        <span class="time-display" id="currentTime">0:00</span>
+                        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="0">
+                        <span class="time-display" id="duration">0:00</span>
+                    </div>
                 </div>
             </div>
         </main>
 
         <section class="controls">
-            <button id="undoBtn">↶ Undo</button>
-            <button id="clearBtn">🔄 Clear Level</button>
-            <button id="cleanBtn">✨ Clean Clear</button>
-            <button id="hintsBtn">💡 Hints: ON</button>
-            <button id="newGameBtn">🎮 New Game</button>
+            <button class="btn" id="undoBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                </svg>
+                Undo
+            </button>
+            <button class="btn" id="clearBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                </svg>
+                Clear Level
+            </button>
+            <button class="btn" id="cleanBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                </svg>
+                Clean Clear
+            </button>
+            <button class="btn" id="hintsBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+                    <line x1="9" y1="21" x2="15" y2="21"/>
+                </svg>
+                Hints: ON
+            </button>
+            <button class="btn btn-primary" id="newGameBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                </svg>
+                New Game
+            </button>
         </section>
-
-        <div id="message" class="message" style="display: none;"></div>
     </div>
 
-    <script src="urban_ivy_web.js"></script>
+    <script type="module" src="zentiles-app.js"></script>
 </body>
 </html>

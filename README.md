@@ -1,22 +1,41 @@
-# Urban Ivy - Reference Implementation
+# ZenTiles - Contemplative Puzzle Game
 
-A complete reference implementation of the Urban Ivy grid-based puzzle game, extracted from Unity and implemented in pure Python.
+A meditative tile-placement puzzle game featuring contemplative themes inspired by India, Japan, Celtic, and Native American traditions.
 
 ## Overview
 
-Urban Ivy is a tile placement puzzle game where players place pieces on an N×N grid, clearing completed rows and columns to progress through levels. The game features piece unlocking, power actions, and progressive difficulty.
+ZenTiles is a tile placement puzzle game where players place pieces on an N×N grid, clearing completed rows and columns to progress through levels. The game features a calming atmosphere with ambient backgrounds and music.
 
 ## Files
 
-- `urban_ivy_game.py` - Core game implementation
+### Web Application
+- `index.html` - Main HTML with modern glassmorphism UI
+- `zentiles-app.js` - Main application integrating game logic and themes
+
+### Theme System (`/themes`)
+- `theme-config.js` - Theme definitions (colors, backgrounds, audio)
+- `theme-manager.js` - Central theme controller
+- `audio-controller.js` - Ambient music playback with crossfading
+- `background-controller.js` - Background image transitions and dog companion
+
+### Legacy/Reference
+- `urban_ivy_game.py` - Python reference implementation
+- `urban_ivy_web.js` - Original web implementation
 - `test_game.py` - Comprehensive test suite
 - `game_rules.md` - Complete game rules documentation
 - `architecture_diagram.md` - System architecture and design
-- `README.md` - This file
 
 ## Quick Start
 
-### Running the Game
+### Running the Web Game
+```bash
+# Start a local server
+python3 -m http.server 8080
+
+# Open http://localhost:8080 in your browser
+```
+
+### Running the Python Reference
 ```bash
 python urban_ivy_game.py
 ```
@@ -26,7 +45,35 @@ python urban_ivy_game.py
 python test_game.py
 ```
 
-## Game Controls
+## Theme System
+
+ZenTiles features four contemplative themes, each with:
+- **High-resolution backgrounds** that gently transition every 15-20 seconds
+- **Ambient music** with smooth crossfading between tracks
+- **Walker hound companion** sitting peacefully in the corner
+- **Theme-appropriate color palette** for UI elements
+
+### Available Themes
+| Theme | Tradition | Atmosphere |
+|-------|-----------|------------|
+| **Sacred India** | Indian | Temples, Himalayas, warm earth tones |
+| **Zen Japan** | Japanese | Zen gardens, bamboo forests, serene reds |
+| **Celtic Mist** | Celtic | Stone circles, misty hills, forest greens |
+| **Spirit Plains** | Native American | Canyons, prairies, sunset ochres |
+
+Click the sun icon (☀) in the header to switch themes. Your preference is saved locally.
+
+## Game Controls (Web)
+
+- **Click** on the board to place pieces
+- **Theme button** (☀) - Open theme selector
+- **Music button** (♪) - Toggle ambient music
+- **Undo** - Revert last move
+- **Clear Level** - Reset current level
+- **Clean Clear** - Clear board without penalty
+- **Hints** - Toggle valid placement highlights
+
+## Game Controls (Python CLI)
 
 - `place x y` - Place current piece at coordinates (x, y)
 - `undo` - Undo last move (consumes undo charge)
