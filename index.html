@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Ivy - Web Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .info-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .game-area {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .board-container {
+            position: relative;
+        }
+
+        canvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: white;
+        }
+
+        .piece-preview {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .piece-preview h3 {
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .swap-slots {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .swap-slot {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .swap-slot:hover:not(.disabled) {
+            background: rgba(102, 126, 234, 0.2);
+            transform: scale(1.05);
+        }
+
+        .swap-slot.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .message.info {
+            background: rgba(52, 152, 219, 0.1);
+            color: #2980b9;
+            border: 2px solid #3498db;
+        }
+
+        .message.warning {
+            background: rgba(241, 196, 15, 0.1);
+            color: #f39c12;
+            border: 2px solid #f1c40f;
+        }
+
+        .message.success {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+            border: 2px solid #2ecc71;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>🌿 Urban Ivy</h1>
+            <p>Place pieces to clear rows and columns!</p>
+        </header>
+
+        <section class="game-info">
+            <div class="info-item">Level: <span id="level">1</span></div>
+            <div class="info-item">Lines: <span id="lines">0</span></div>
+            <div class="info-item">Remaining: <span id="remaining">25</span></div>
+            <div class="info-item">Placed: <span id="placed">0</span></div>
+            <div class="info-item">Undo: <span id="undo">3</span></div>
+            <div class="info-item">Clean Clear: <span id="clean">1</span></div>
+        </section>
+
+        <main class="game-area">
+            <div class="board-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            
+            <div class="piece-preview">
+                <h3>Next Piece</h3>
+                <canvas id="nextPieceCanvas" width="120" height="120"></canvas>
+                
+                <div class="swap-slots">
+                    <div class="swap-slot" data-slot="0" title="Swap Slot 1"></div>
+                    <div class="swap-slot" data-slot="1" title="Swap Slot 2"></div>
+                    <div class="swap-slot" data-slot="2" title="Swap Slot 3"></div>
+                </div>
+            </div>
+        </main>
+
+        <section class="controls">
+            <button id="undoBtn">↶ Undo</button>
+            <button id="clearBtn">🔄 Clear Level</button>
+            <button id="cleanBtn">✨ Clean Clear</button>
+            <button id="hintsBtn">💡 Hints: ON</button>
+            <button id="newGameBtn">🎮 New Game</button>
+        </section>
+
+        <div id="message" class="message" style="display: none;"></div>
+    </div>
+
+    <script src="urban_ivy_web.js"></script>
+</body>
+</html>
