@@ -198,6 +198,8 @@ class GameState {
 }
 
 class GameEngine {
+    static SAVE_KEY = 'zentiles-save';
+
     constructor(state = null) {
         this.state = state || new GameState();
         this.undoHistory = [];
@@ -205,6 +207,109 @@ class GameEngine {
         if (!state) {
             this.spawnPieces();
         }
+    }
+
+    static loadGame() {
+        try {
+            const json = localStorage.getItem(GameEngine.SAVE_KEY);
+            if (!json) return null;
+
+            const data = JSON.parse(json);
+
+            const state = new GameState();
+            state.level = data.level;
+            state.linesClearedTotal = data.linesClearedTotal;
+            state.linesAtLevelStart = data.linesAtLevelStart;
+            state.linesToNextLevel = data.linesToNextLevel;
+            state.piecesPlaced = data.piecesPlaced;
+            state.undoCharges = data.undoCharges;
+            state.cleanClearCharges = data.cleanClearCharges;
+            state.reserveUsedThisTurn = data.reserveUsedThisTurn;
+            state.pieceSpawnCounts = data.pieceSpawnCounts;
+            state.pieceSpawnTotal = data.pieceSpawnTotal;
+            state.difficulty = data.difficulty;
+            state.useDeterministicRng = data.useDeterministicRng;
+            state.rngSeed = data.rngSeed;
+
+            state.board = new Board(data.board.width, data.board.height);
+            state.board.occupied = data.board.occupied;
+
+            state.currentPiece = new Piece(data.currentPiece.shapeIndex);
+            state.currentPiece.cells = data.currentPiece.cells;
+
+            state.nextPiece = new Piece(data.nextPiece.shapeIndex);
+            state.nextPiece.cells = data.nextPiece.cells;
+
+            state.reserveSlots = (data.reserveSlots || []).map(p => {
+                if (!p) return null;
+                const piece = new Piece(p.shapeIndex);
+                piece.cells = p.cells;
+                return piece;
+            });
+
+            const engine = new GameEngine(state);
+
+            // Restore undo history
+            engine.undoHistory = (data.undoHistory || []).map(snap => {
+                const s = {};
+                Object.assign(s, snap);
+                s.board = new Board(snap.board.width, snap.board.height);
+                s.board.occupied = snap.board.occupied;
+                s.currentPiece = new Piece(snap.currentPiece.shapeIndex);
+                s.currentPiece.cells = snap.currentPiece.cells;
+                s.nextPiece = new Piece(snap.nextPiece.shapeIndex);
+                s.nextPiece.cells = snap.nextPiece.cells;
+                s.reserveSlots = (snap.reserveSlots || []).map(p => {
+                    if (!p) return null;
+                    const piece = new Piece(p.shapeIndex);
+                    piece.cells = p.cells;
+                    return piece;
+                });
+                return s;
+            });
+
+            return engine;
+        } catch (e) {
+            console.warn('Failed to load saved game:', e);
+            localStorage.removeItem(GameEngine.SAVE_KEY);
+            return null;
+        }
+    }
+
+    saveGame() {
+        try {
+            const serializePiece = (p) => p ? { shapeIndex: p.shapeIndex, cells: p.cells } : null;
+            const serializeSnap = (s) => ({
+                level: s.level,
+                linesClearedTotal: s.linesClearedTotal,
+                linesAtLevelStart: s.linesAtLevelStart,
+                linesToNextLevel: s.linesToNextLevel,
+                piecesPlaced: s.piecesPlaced,
+                undoCharges: s.undoCharges,
+                cleanClearCharges: s.cleanClearCharges,
+                reserveUsedThisTurn: s.reserveUsedThisTurn,
+                pieceSpawnCounts: s.pieceSpawnCounts,
+                pieceSpawnTotal: s.pieceSpawnTotal,
+                difficulty: s.difficulty,
+                useDeterministicRng: s.useDeterministicRng,
+                rngSeed: s.rngSeed,
+                board: { width: s.board.width, height: s.board.height, occupied: s.board.occupied },
+                currentPiece: serializePiece(s.currentPiece),
+                nextPiece: serializePiece(s.nextPiece),
+                reserveSlots: (s.reserveSlots || []).map(serializePiece),
+            });
+
+            const data = serializeSnap(this.state);
+            data.undoHistory = this.undoHistory.map(serializeSnap);
+
+            localStorage.setItem(GameEngine.SAVE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.warn('Failed to save game:', e);
+        }
+    }
+
+    static clearSavedGame() {
+        localStorage.removeItem(GameEngine.SAVE_KEY);
     }
 
     random() {
@@ -257,15 +362,13 @@ class GameEngine {
             return piece;
         });
         this.undoHistory.push(snapshot);
-        if (this.undoHistory.length > 10) {
-            this.undoHistory.shift();
-        }
     }
 
     undo() {
         if (!this.undoHistory || this.undoHistory.length === 0 || this.state.undoCharges <= 0) {
             return false;
         }
+        const chargesBeforeUndo = this.state.undoCharges;
         const snapshot = this.undoHistory.pop();
         this.state.board = snapshot.board;
         this.state.currentPiece = snapshot.currentPiece;
@@ -285,8 +388,8 @@ class GameEngine {
         this.state.useDeterministicRng = snapshot.useDeterministicRng;
         this.state.rngSeed = snapshot.rngSeed;
         
-        // Decrement undo charges for using the undo
-        this.state.undoCharges--;
+        // Spend an undo charge from the current charge pool (not the snapshot's)
+        this.state.undoCharges = Math.max(0, chargesBeforeUndo - 1);
         return true;
     }
 
@@ -425,7 +528,7 @@ class ZenTilesApp {
         this.nextCanvas = document.getElementById('nextPieceCanvas');
         this.nextCtx = this.nextCanvas.getContext('2d');
         
-        this.engine = new GameEngine();
+        this.engine = GameEngine.loadGame() || new GameEngine();
         this.themeManager = getThemeManager();
         
         this.cellSize = 68;
@@ -744,12 +847,14 @@ class ZenTilesApp {
             this.showMessage(`Cleared ${result.cleared} line${result.cleared > 1 ? 's' : ''}`, 'success');
         }
         
+        this.engine.saveGame();
         this.updateUI();
         this.render();
     }
 
     undo() {
         if (this.engine.undo()) {
+            this.engine.saveGame();
             this.showMessage('Move undone', 'info');
             this.updateUI();
             this.render();
@@ -760,6 +865,7 @@ class ZenTilesApp {
 
     clearLevel() {
         this.engine.clearLevel();
+        this.engine.saveGame();
         this.showMessage('Level cleared', 'info');
         this.updateUI();
         this.render();
@@ -767,6 +873,7 @@ class ZenTilesApp {
 
     cleanClear() {
         if (this.engine.cleanClear()) {
+            this.engine.saveGame();
             this.showMessage('Board cleaned', 'success');
             this.updateUI();
             this.render();
@@ -777,6 +884,7 @@ class ZenTilesApp {
 
     swapPiece(slotIndex) {
         if (this.engine.swapPiece(slotIndex)) {
+            this.engine.saveGame();
             this.showMessage(`Swapped with slot ${slotIndex + 1}`, 'info');
             this.updateUI();
             this.render();
@@ -786,8 +894,10 @@ class ZenTilesApp {
     }
 
     newGame() {
+        GameEngine.clearSavedGame();
         this.engine = new GameEngine();
         this.engine.state.useDeterministicRng = this.useDeterministicRng;
+        this.engine.saveGame();
         this.setupCanvas();
         this.showMessage('New game started', 'success');
         this.updateUI();
@@ -811,7 +921,7 @@ class ZenTilesApp {
         
         const undoBtn = document.getElementById('undoBtn');
         const cleanBtn = document.getElementById('cleanBtn');
-        undoBtn.disabled = state.undoCharges <= 0;
+        undoBtn.disabled = state.undoCharges <= 0 || this.engine.undoHistory.length === 0;
         cleanBtn.disabled = state.cleanClearCharges <= 0;
 
         undoBtn.innerHTML = `
@@ -1149,7 +1259,20 @@ class ZenTilesApp {
     }
 }
 
+if (typeof window !== 'undefined') {
+    window.Piece = Piece;
+    window.Board = Board;
+    window.GameState = GameState;
+    window.GameEngine = GameEngine;
+    window.ZenTilesApp = ZenTilesApp;
+}
+
 // Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new ZenTilesApp();
-});
+if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const hasGameDom = !!document.getElementById('gameCanvas');
+        if (hasGameDom) {
+            new ZenTilesApp();
+        }
+    });
+}

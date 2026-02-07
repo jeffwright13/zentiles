@@ -777,6 +777,25 @@
                     </button>
                     <div class="settings-panel" id="settingsPanel">
                         <div class="settings-section">
+                            <h4>Actions</h4>
+                            <button class="settings-btn" id="newGameBtn">New Game</button>
+                        </div>
+                        <div class="settings-section">
+                            <h4>Options</h4>
+                            <div class="settings-row">
+                                <span>Tooltips</span>
+                                <div class="toggle-switch active" id="tooltipsToggle"></div>
+                            </div>
+                            <div class="settings-row">
+                                <span>Hints</span>
+                                <div class="toggle-switch" id="hintsToggle"></div>
+                            </div>
+                            <div class="settings-row">
+                                <span>Deterministic Pieces</span>
+                                <div class="toggle-switch" id="deterministicToggle" title="When enabled, undo/replay won't reroll pieces"></div>
+                            </div>
+                        </div>
+                        <div class="settings-section">
                             <h4>Theme</h4>
                             <button class="settings-btn" id="themeBtn">Change Theme</button>
                         </div>
@@ -819,25 +838,6 @@
                                     </svg>
                                 </div>
                             </div>
-                        </div>
-                        <div class="settings-section">
-                            <h4>Options</h4>
-                            <div class="settings-row">
-                                <span>Tooltips</span>
-                                <div class="toggle-switch active" id="tooltipsToggle"></div>
-                            </div>
-                            <div class="settings-row">
-                                <span>Hints</span>
-                                <div class="toggle-switch" id="hintsToggle"></div>
-                            </div>
-                            <div class="settings-row">
-                                <span>Deterministic Pieces</span>
-                                <div class="toggle-switch" id="deterministicToggle" title="When enabled, undo/replay won't reroll pieces"></div>
-                            </div>
-                        </div>
-                        <div class="settings-section">
-                            <h4>Actions</h4>
-                            <button class="settings-btn" id="newGameBtn">New Game</button>
                         </div>
                     </div>
                 </div>
