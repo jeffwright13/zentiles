@@ -1,6 +1,2 @@
 __pycache__/
 icons/
-manifest.json
-sw.js
-
-tests/node_modules/
