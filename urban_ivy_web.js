@@ -146,6 +146,17 @@ class Board {
         return clearedCount;
     }
 
+    isBoardEmpty() {
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                if (this.occupied[x][y]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     resize(newWidth, newHeight) {
         const newOccupied = Array(newWidth).fill().map(() => Array(newHeight).fill(false));
         
@@ -214,9 +225,6 @@ class GameEngine {
             return false;
         }
         
-        // Save state for undo
-        this.saveUndoSnapshot();
-        
         // Place piece
         this.state.board.placePiece(this.state.currentPiece, origin);
         this.state.piecesPlaced++;
@@ -228,11 +236,20 @@ class GameEngine {
         
         // Update progression
         this.state.linesClearedTotal += cleared;
+        
+        // Check if board is completely empty after clearing - award additional Clean Clear
+        if (this.state.board.isBoardEmpty() && cleared > 0) {
+            this.state.cleanClearCharges++;
+        }
+        
         this.checkLevelUp();
         
         // Spawn next piece
         this.advancePiece();
         this.state.reserveUsedThisTurn = false;
+        
+        // Save state for undo AFTER all operations
+        this.saveUndoSnapshot();
         
         return cleared > 0 ? { cleared, rows, cols } : true;
     }
@@ -277,6 +294,7 @@ class GameEngine {
         this.state.pieceSpawnCounts = snapshot.pieceSpawnCounts;
         this.state.pieceSpawnTotal = snapshot.pieceSpawnTotal;
         
+        // Decrement undo charges for using the undo
         this.state.undoCharges--;
         return true;
     }

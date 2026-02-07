@@ -3,6 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="./manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(() => {
+                console.log('Service Worker registered.');
+            }).catch(err => {
+                console.log('Service Worker registration failed:', err);
+            });
+        }
+    </script>
     <title>ZenTiles - Contemplative Puzzle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -819,6 +829,10 @@
                             <div class="settings-row">
                                 <span>Hints</span>
                                 <div class="toggle-switch" id="hintsToggle"></div>
+                            </div>
+                            <div class="settings-row">
+                                <span>Deterministic Pieces</span>
+                                <div class="toggle-switch" id="deterministicToggle" title="When enabled, undo/replay won't reroll pieces"></div>
                             </div>
                         </div>
                         <div class="settings-section">

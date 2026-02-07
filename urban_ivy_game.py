@@ -148,6 +148,14 @@ class Board:
         
         return cleared_count
     
+    def is_board_empty(self) -> bool:
+        """Check if board is completely empty"""
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.occupied[x][y]:
+                    return False
+        return True
+    
     def resize(self, new_width: int, new_height: int):
         """Resize board, preserving existing occupied cells"""
         new_occupied = [[False for _ in range(new_height)] for _ in range(new_width)]
@@ -216,9 +224,6 @@ class GameEngine:
         if not self.state.board.can_place_piece(self.state.current_piece, origin):
             return False
         
-        # Save state for undo
-        self._save_undo_snapshot()
-        
         # Place piece
         self.state.board.place_piece(self.state.current_piece, origin)
         self.state.pieces_placed += 1
@@ -230,11 +235,19 @@ class GameEngine:
         
         # Update progression
         self.state.lines_cleared_total += cleared
+        
+        # Check if board is completely empty after clearing - award additional Clean Clear
+        if self.state.board.is_board_empty() and cleared > 0:
+            self.state.clean_clear_charges += 1
+        
         self._check_level_up()
         
         # Spawn next piece
         self._advance_piece()
         self.state.reserve_used_this_turn = False
+        
+        # Save state for undo AFTER all operations
+        self._save_undo_snapshot()
         
         return True
     
@@ -253,6 +266,8 @@ class GameEngine:
             return False
         
         self.state = self.undo_history.pop()
+        
+        # Decrement undo charges for using the undo
         self.state.undo_charges -= 1
         return True
     

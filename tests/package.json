@@ -1,0 +1,22 @@
+{
+  "name": "zentiles-tests",
+  "version": "1.0.0",
+  "description": "Test suite for ZenTiles game",
+  "main": "test_runner.html",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "open tests/test_runner.html",
+    "test:unit": "open tests/unit/",
+    "test:integration": "open tests/integration/"
+  },
+  "keywords": [
+    "zentiles",
+    "game",
+    "tests",
+    "javascript"
+  ],
+  "author": "ZenTiles Team",
+  "license": "MIT"
+}

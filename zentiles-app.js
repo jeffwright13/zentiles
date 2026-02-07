@@ -137,6 +137,17 @@ class Board {
         return clearedCount;
     }
 
+    isBoardEmpty() {
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                if (this.occupied[x][y]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     resize(newWidth, newHeight) {
         const newOccupied = Array(newWidth).fill().map(() => Array(newHeight).fill(false));
         for (let x = 0; x < Math.min(this.width, newWidth); x++) {
@@ -167,6 +178,10 @@ class GameState {
         this.pieceSpawnCounts = Array(12).fill(0);
         this.pieceSpawnTotal = 0;
         this.difficulty = 'normal';
+        this.useDeterministicRng = false;
+        this.rngSeed = (typeof crypto !== 'undefined' && crypto.getRandomValues)
+            ? crypto.getRandomValues(new Uint32Array(1))[0]
+            : (Date.now() >>> 0);
     }
 
     getLinesRemaining() {
@@ -192,20 +207,38 @@ class GameEngine {
         }
     }
 
+    random() {
+        if (!this.state.useDeterministicRng) {
+            return Math.random();
+        }
+        // LCG (deterministic) so undo can restore RNG state and prevent reroll exploits
+        this.state.rngSeed = ((this.state.rngSeed * 1664525) + 1013904223) >>> 0;
+        return this.state.rngSeed / 4294967296;
+    }
+
     placePiece(origin) {
         if (!this.state.board.canPlacePiece(this.state.currentPiece, origin)) {
             return false;
         }
-        this.saveUndoSnapshot();
         this.state.board.placePiece(this.state.currentPiece, origin);
         this.state.piecesPlaced++;
         const rows = this.state.board.getFullRows();
         const cols = this.state.board.getFullColumns();
         const cleared = this.state.board.clearRowsAndColumns(rows, cols);
         this.state.linesClearedTotal += cleared;
+        
+        // Check if board is completely empty after clearing - award additional Clean Clear
+        if (this.state.board.isBoardEmpty() && cleared > 0) {
+            this.state.cleanClearCharges++;
+        }
+        
         this.checkLevelUp();
         this.advancePiece();
         this.state.reserveUsedThisTurn = false;
+        
+        // Save undo snapshot AFTER all operations are complete
+        this.saveUndoSnapshot();
+        
         return cleared > 0 ? { cleared, rows, cols } : true;
     }
 
@@ -217,6 +250,12 @@ class GameEngine {
         snapshot.currentPiece.cells = JSON.parse(JSON.stringify(this.state.currentPiece.cells));
         snapshot.nextPiece = new Piece(this.state.nextPiece.shapeIndex);
         snapshot.nextPiece.cells = JSON.parse(JSON.stringify(this.state.nextPiece.cells));
+        snapshot.reserveSlots = (this.state.reserveSlots || []).map((p) => {
+            if (!p) return null;
+            const piece = new Piece(p.shapeIndex ?? 0);
+            piece.cells = JSON.parse(JSON.stringify(p.cells || piece.cells));
+            return piece;
+        });
         this.undoHistory.push(snapshot);
         if (this.undoHistory.length > 10) {
             this.undoHistory.shift();
@@ -242,6 +281,11 @@ class GameEngine {
         this.state.reserveUsedThisTurn = snapshot.reserveUsedThisTurn;
         this.state.pieceSpawnCounts = snapshot.pieceSpawnCounts;
         this.state.pieceSpawnTotal = snapshot.pieceSpawnTotal;
+        this.state.difficulty = snapshot.difficulty;
+        this.state.useDeterministicRng = snapshot.useDeterministicRng;
+        this.state.rngSeed = snapshot.rngSeed;
+        
+        // Decrement undo charges for using the undo
         this.state.undoCharges--;
         return true;
     }
@@ -267,11 +311,8 @@ class GameEngine {
     swapPiece(slotIndex) {
         if (this.state.reserveUsedThisTurn) return false;
         if (slotIndex < 0 || slotIndex >= this.state.reserveSlots.length) return false;
-        
-        let unlockedSlots = 0;
-        if (this.state.level >= 10) unlockedSlots = 1;
-        if (this.state.level >= 20) unlockedSlots = 2;
-        if (this.state.level >= 30) unlockedSlots = 3;
+
+        const unlockedSlots = Math.min(3, Math.floor(this.state.level / 5));
         
         if (slotIndex >= unlockedSlots) return false;
         
@@ -334,10 +375,10 @@ class GameEngine {
     spawnPieces() {
         // Generate first piece (at least 2 cells)
         const unlockedCount = this.state.getUnlockedPieceCount();
-        const pieceIndex = 1 + Math.floor(Math.random() * (unlockedCount - 1));
+        const pieceIndex = 1 + Math.floor(this.random() * (unlockedCount - 1));
         const firstPiece = new Piece(pieceIndex);
-        firstPiece.rotate(Math.floor(Math.random() * 4));
-        if (Math.random() < 0.5) firstPiece.reflect();
+        firstPiece.rotate(Math.floor(this.random() * 4));
+        if (this.random() < 0.5) firstPiece.reflect();
         this.state.currentPiece = firstPiece;
         
         // Generate second piece using normal spawn logic
@@ -348,11 +389,11 @@ class GameEngine {
         const unlockedCount = this.state.getUnlockedPieceCount();
         let pieceIndex;
         if (this.state.difficulty === 'hard') {
-            pieceIndex = Math.floor(Math.random() * unlockedCount);
+            pieceIndex = Math.floor(this.random() * unlockedCount);
         } else {
             const weights = [3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1].slice(0, unlockedCount);
             const totalWeight = weights.reduce((a, b) => a + b, 0);
-            let random = Math.random() * totalWeight;
+            let random = this.random() * totalWeight;
             pieceIndex = 0;
             for (let i = 0; i < weights.length; i++) {
                 random -= weights[i];
@@ -363,8 +404,8 @@ class GameEngine {
             }
         }
         const piece = new Piece(pieceIndex);
-        piece.rotate(Math.floor(Math.random() * 4));
-        if (Math.random() < 0.5) piece.reflect();
+        piece.rotate(Math.floor(this.random() * 4));
+        if (this.random() < 0.5) piece.reflect();
         this.state.nextPiece = piece;
         this.state.pieceSpawnCounts[pieceIndex]++;
         this.state.pieceSpawnTotal++;
@@ -393,6 +434,10 @@ class ZenTilesApp {
         this.showHints = false;
         this.isPlaying = false;
         this.isRepeat = false;
+        this.useDeterministicRng = false;
+
+        this._messageHideTimeoutId = null;
+        this._persistentMessage = null;
         
         this.init();
     }
@@ -469,7 +514,8 @@ class ZenTilesApp {
         // Tooltips toggle
         const tooltipsToggle = document.getElementById('tooltipsToggle');
         this.tooltipsEnabled = true;
-        tooltipsToggle.addEventListener('click', () => {
+        tooltipsToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.tooltipsEnabled = !this.tooltipsEnabled;
             tooltipsToggle.classList.toggle('active', this.tooltipsEnabled);
             this.updateTooltips();
@@ -478,7 +524,22 @@ class ZenTilesApp {
         // Hints toggle
         const hintsToggle = document.getElementById('hintsToggle');
         hintsToggle.classList.toggle('active', this.showHints);
-        hintsToggle.addEventListener('click', () => this.toggleHints());
+        hintsToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleHints();
+        });
+
+        // Deterministic piece generation toggle
+        const deterministicToggle = document.getElementById('deterministicToggle');
+        if (deterministicToggle) {
+            deterministicToggle.classList.toggle('active', this.useDeterministicRng);
+            deterministicToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.useDeterministicRng = !this.useDeterministicRng;
+                deterministicToggle.classList.toggle('active', this.useDeterministicRng);
+                this.engine.state.useDeterministicRng = this.useDeterministicRng;
+            });
+        }
 
         // Listen for theme changes
         this.themeManager.on('themeChange', () => this.render());
@@ -683,10 +744,6 @@ class ZenTilesApp {
             this.showMessage(`Cleared ${result.cleared} line${result.cleared > 1 ? 's' : ''}`, 'success');
         }
         
-        if (!this.engine.hasValidMoves()) {
-            this.showMessage('No valid moves available', 'warning');
-        }
-        
         this.updateUI();
         this.render();
     }
@@ -730,6 +787,7 @@ class ZenTilesApp {
 
     newGame() {
         this.engine = new GameEngine();
+        this.engine.state.useDeterministicRng = this.useDeterministicRng;
         this.setupCanvas();
         this.showMessage('New game started', 'success');
         this.updateUI();
@@ -770,8 +828,18 @@ class ZenTilesApp {
             Clean Clear (${state.cleanClearCharges})
         `;
         
-        const unlockedSlots = Math.floor(state.level / 10);
+        const unlockedSlots = Math.min(3, Math.floor(state.level / 5));
         document.querySelectorAll('.swap-slot').forEach((slot, index) => {
+            const unlockLevel = (index + 1) * 5;
+            const tooltipText = state.level >= unlockLevel
+                ? `Swap slot ${index + 1} (unlocked at level ${unlockLevel}). You can swap once per turn.`
+                : `Locked swap slot ${index + 1}. Unlocks at level ${unlockLevel}.`;
+            if (this.tooltipsEnabled) {
+                slot.title = tooltipText;
+            } else {
+                slot.dataset.originalTitle = tooltipText;
+                slot.title = '';
+            }
             slot.classList.toggle('disabled', index >= unlockedSlots);
             slot.innerHTML = '';
             if (state.reserveSlots[index]) {
@@ -784,6 +852,12 @@ class ZenTilesApp {
         });
         
         this.validPlacements = this.engine.getValidPlacements();
+
+        if (!this.engine.hasValidMoves()) {
+            this.showMessage('No valid moves available', 'warning', { persistentKey: 'noValidMoves' });
+        } else {
+            this.clearMessage('noValidMoves');
+        }
     }
 
     render() {
@@ -951,7 +1025,15 @@ class ZenTilesApp {
         canvas.height = 36;
         const ctx = canvas.getContext('2d');
         
-        const bounds = piece.getBounds();
+        const bounds = typeof piece?.getBounds === 'function'
+            ? piece.getBounds()
+            : (() => {
+                const cells = piece?.cells;
+                if (!Array.isArray(cells) || cells.length === 0) return [0, 0, 0, 0];
+                const xs = cells.map(([x, y]) => x);
+                const ys = cells.map(([x, y]) => y);
+                return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+            })();
         const pieceWidth = bounds[2] - bounds[0] + 1;
         const pieceHeight = bounds[3] - bounds[1] + 1;
         
@@ -1014,15 +1096,56 @@ class ZenTilesApp {
         return hex;
     }
 
-    showMessage(text, type = 'info') {
+    clearMessage(persistentKey = null) {
+        if (persistentKey && this._persistentMessage?.key !== persistentKey) {
+            return;
+        }
+
+        this._persistentMessage = null;
+
         const messageEl = document.getElementById('message');
+        if (!messageEl) return;
+
+        if (this._messageHideTimeoutId) {
+            clearTimeout(this._messageHideTimeoutId);
+            this._messageHideTimeoutId = null;
+        }
+
+        messageEl.style.display = 'none';
+    }
+
+    showMessage(text, type = 'info', options = null) {
+        const messageEl = document.getElementById('message');
+        if (!messageEl) return;
+
+        const persistentKey = options?.persistentKey ?? null;
+        const durationMs = options?.durationMs ?? 2500;
+
+        if (persistentKey) {
+            this._persistentMessage = { key: persistentKey, text, type };
+        }
+
+        if (this._messageHideTimeoutId) {
+            clearTimeout(this._messageHideTimeoutId);
+            this._messageHideTimeoutId = null;
+        }
+
         messageEl.textContent = text;
         messageEl.className = `message ${type}`;
         messageEl.style.display = 'block';
-        
-        setTimeout(() => {
-            messageEl.style.display = 'none';
-        }, 2500);
+
+        if (!persistentKey) {
+            this._messageHideTimeoutId = setTimeout(() => {
+                this._messageHideTimeoutId = null;
+                if (this._persistentMessage) {
+                    messageEl.textContent = this._persistentMessage.text;
+                    messageEl.className = `message ${this._persistentMessage.type}`;
+                    messageEl.style.display = 'block';
+                } else {
+                    messageEl.style.display = 'none';
+                }
+            }, durationMs);
+        }
     }
 }
 

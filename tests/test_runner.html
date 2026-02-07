@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whole Field Clear Tests - ZenTiles</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background-color: #45a049;
+        }
+        .test-output {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .summary {
+            background-color: #e2e3e5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Whole Field Clear Tests</h1>
+        <p>Tests for the ZenTiles functionality that should award an additional Clean Clear charge when clearing the entire board with a single piece placement.</p>
+        
+        <button class="test-button" onclick="runTests()">Run Tests</button>
+        <button class="test-button" onclick="clearOutput()" style="margin-left: 10px;">Clear Output</button>
+        
+        <div id="test-output" class="test-output">Click "Run Tests" to start testing...</div>
+        <div id="status" class="status" style="display: none;"></div>
+        <div id="summary" class="summary" style="display: none;"></div>
+    </div>
+
+    <!-- Load the main game script -->
+    <script src="../zentiles-app.js"></script>
+    
+    <!-- Load test configuration -->
+    <script src="test-config.js"></script>
+    
+    <!-- Load the test scripts -->
+    <script src="unit/test_whole_field_clear.js"></script>
+    <script src="unit/test_menu_functionality.js"></script>
+    <script src="unit/test_undo_functionality.js"></script>
+    
+    <script>
+        let originalLog = console.log;
+        let logOutput = '';
+        
+        function runTests() {
+            const outputDiv = document.getElementById('test-output');
+            const statusDiv = document.getElementById('status');
+            const summaryDiv = document.getElementById('summary');
+            
+            // Clear previous results
+            logOutput = '';
+            outputDiv.textContent = 'Loading game classes...\n';
+            
+            // Override console.log to capture output
+            console.log = function(...args) {
+                const message = args.join(' ');
+                logOutput += message + '\n';
+                outputDiv.textContent = logOutput;
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+                originalLog.apply(console, args);
+            };
+            
+            // Run the tests
+            setTimeout(() => {
+                try {
+                    console.log('Starting comprehensive test suite...');
+                    
+                    // Run whole field clear tests
+                    console.log('\n=== WHOLE FIELD CLEAR TESTS ===');
+                    const wholeFieldResult = runWholeFieldClearTests();
+                    
+                    // Run menu tests using Promise chain
+                    console.log('\n=== MENU FUNCTIONALITY TESTS ===');
+                    runMenuTests().then(menuResult => {
+                        // Run undo tests
+                        console.log('\n=== UNDO FUNCTIONALITY TESTS ===');
+                        const undoResult = runUndoTests();
+                        
+                        const allPassed = wholeFieldResult && menuResult && undoResult;
+                        
+                        // Show status
+                        statusDiv.style.display = 'block';
+                        if (allPassed) {
+                            statusDiv.className = 'status success';
+                            statusDiv.textContent = 'All tests passed! ✓';
+                        } else {
+                            statusDiv.className = 'status error';
+                            statusDiv.textContent = 'Some tests failed! ✗';
+                        }
+                        
+                        // Show summary
+                        summaryDiv.style.display = 'block';
+                        let summaryHTML = '<h3>Test Summary:</h3>';
+                        
+                        if (window.testResults) {
+                            summaryHTML += '<h4>Whole Field Clear Tests:</h4>';
+                            window.testResults.forEach(test => {
+                                const icon = test.passed ? '✅' : '❌';
+                                summaryHTML += `<div>${icon} ${test.name}</div>`;
+                                if (!test.passed && test.error) {
+                                    summaryHTML += `<div style="margin-left: 20px; color: #721c24;">Error: ${test.error}</div>`;
+                                }
+                            });
+                        }
+                        
+                        if (window.menuTestResults) {
+                            summaryHTML += '<h4>Menu Functionality Tests:</h4>';
+                            window.menuTestResults.forEach(test => {
+                                if (test.skipped) {
+                                    summaryHTML += `<div>⚠️ SKIP ${test.name}</div>`;
+                                } else {
+                                    const icon = test.passed ? '✅' : '❌';
+                                    summaryHTML += `<div>${icon} ${test.name}</div>`;
+                                    if (!test.passed && test.error) {
+                                        summaryHTML += `<div style="margin-left: 20px; color: #721c24;">Error: ${test.error}</div>`;
+                                    }
+                                }
+                            });
+                        }
+                        
+                        if (window.undoTestResults) {
+                            summaryHTML += '<h4>Undo Functionality Tests:</h4>';
+                            window.undoTestResults.forEach(test => {
+                                const icon = test.passed ? '✅' : '❌';
+                                summaryHTML += `<div>${icon} ${test.name}</div>`;
+                                if (!test.passed && test.error) {
+                                    summaryHTML += `<div style="margin-left: 20px; color: #721c24;">Error: ${test.error}</div>`;
+                                }
+                            });
+                        }
+                        
+                        summaryDiv.innerHTML = summaryHTML;
+                    }).catch(error => {
+                        console.log('Error in menu tests: ' + error.message);
+                        statusDiv.style.display = 'block';
+                        statusDiv.className = 'status error';
+                        statusDiv.textContent = 'Error in menu tests: ' + error.message;
+                    }).finally(() => {
+                        // Restore console.log
+                        console.log = originalLog;
+                    });
+                    
+                } catch (error) {
+                    console.log('Error running tests: ' + error.message);
+                    statusDiv.style.display = 'block';
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = 'Error running tests: ' + error.message;
+                    // Restore console.log in case of error
+                    console.log = originalLog;
+                }
+            }, 500);
+        }
+        
+        function clearOutput() {
+            document.getElementById('test-output').textContent = 'Output cleared. Click "Run Tests" to start testing...';
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('summary').style.display = 'none';
+            logOutput = '';
+        }
+        
+        // Store test results globally for summary display
+        window.testResults = [];
+    </script>
+</body>
+</html>
