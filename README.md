@@ -18,12 +18,13 @@ ZenTiles is a tile placement puzzle game where players place pieces on an N×N g
 - `audio-controller.js` - Ambient music playback with crossfading
 - `background-controller.js` - Background image transitions and dog companion
 
-### Legacy/Reference
-- `urban_ivy_game.py` - Python reference implementation
-- `urban_ivy_web.js` - Original web implementation
-- `test_game.py` - Comprehensive test suite
+### Documentation
 - `game_rules.md` - Complete game rules documentation
 - `architecture_diagram.md` - System architecture and design
+
+### Tests (`/tests`)
+- `test_runner.html` - Browser-based test runner
+- `unit/` - Unit tests (whole-field-clear, menu, undo)
 
 ## Quick Start
 
@@ -35,15 +36,8 @@ python3 -m http.server 8080
 # Open http://localhost:8080 in your browser
 ```
 
-### Running the Python Reference
-```bash
-python urban_ivy_game.py
-```
-
 ### Running Tests
-```bash
-python test_game.py
-```
+Open `tests/test_runner.html` in a browser, or from the game console run `runUndoTests()`, `runWholeFieldClearTests()`, `runMenuTests()`.
 
 ## Theme System
 

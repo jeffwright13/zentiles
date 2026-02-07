@@ -6,7 +6,7 @@
 import { getThemeManager } from './themes/theme-manager.js';
 
 // ============================================================================
-// GAME CORE CLASSES (from urban_ivy_web.js, modularized)
+// GAME CORE CLASSES
 // ============================================================================
 
 class Piece {
