@@ -325,7 +325,7 @@ class GameEngine {
         if (!this.state.board.canPlacePiece(this.state.currentPiece, origin)) {
             return false;
         }
-        // Save undo snapshot BEFORE any state changes
+        // Save undo snapshot BEFORE any board mutations
         this.saveUndoSnapshot();
 
         this.state.board.placePiece(this.state.currentPiece, origin);

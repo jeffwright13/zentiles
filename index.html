@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/zentiles/manifest.json">
     <script>
+        const basePath = location.pathname.startsWith('/zentiles/') ? '/zentiles' : '';
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) {
+            manifestLink.href = `${basePath}/manifest.json`;
+        }
+
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/zentiles/sw.js').then(() => {
+            navigator.serviceWorker.register(`${basePath}/sw.js`).then(() => {
                 console.log('Service Worker registered.');
             }).catch(err => {
                 console.log('Service Worker registration failed:', err);
