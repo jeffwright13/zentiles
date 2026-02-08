@@ -533,6 +533,7 @@ class ZenTilesApp {
         
         this.cellSize = 68;
         this.hoverPos = null;
+        this.pointerDownCell = null;
         this.validPlacements = [];
         this.showHints = false;
         this.isPlaying = false;
@@ -571,8 +572,10 @@ class ZenTilesApp {
         const supportsPointer = 'PointerEvent' in window;
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         if (supportsPointer) {
-            this.canvas.addEventListener('pointermove', (e) => this.handleMouseMove(e));
-            this.canvas.addEventListener('pointerdown', (e) => this.handleClick(e));
+            this.canvas.addEventListener('pointermove', (e) => this.handlePointerMove(e));
+            this.canvas.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+            this.canvas.addEventListener('pointerup', (e) => this.handlePointerUp(e));
+            this.canvas.addEventListener('pointercancel', () => this.handlePointerCancel());
         } else {
             this.canvas.addEventListener('click', (e) => this.handleClick(e));
         }
@@ -828,6 +831,42 @@ class ZenTilesApp {
         const x = Math.floor(((clientX - rect.left) * scaleX) / this.cellSize);
         const y = Math.floor(((clientY - rect.top) * scaleY) / this.cellSize);
         return [x, y];
+    }
+
+    handlePointerDown(e) {
+        const cell = this.getBoardCellFromEvent(e);
+        if (!cell) return;
+        e.preventDefault();
+        this.pointerDownCell = cell;
+        this.hoverPos = cell;
+        this.render();
+    }
+
+    handlePointerMove(e) {
+        const cell = this.getBoardCellFromEvent(e);
+        if (!cell) return;
+        e.preventDefault();
+        const [x, y] = cell;
+        if (x !== this.hoverPos?.[0] || y !== this.hoverPos?.[1]) {
+            this.hoverPos = cell;
+            this.render();
+        }
+    }
+
+    handlePointerUp(e) {
+        const cell = this.getBoardCellFromEvent(e);
+        if (!cell) return;
+        e.preventDefault();
+        const [x, y] = cell;
+        const [startX, startY] = this.pointerDownCell || [];
+        this.pointerDownCell = null;
+        if (startX === x && startY === y) {
+            this.placePiece(cell);
+        }
+    }
+
+    handlePointerCancel() {
+        this.pointerDownCell = null;
     }
 
     handleMouseMove(e) {
