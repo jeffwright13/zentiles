@@ -568,10 +568,14 @@ class ZenTilesApp {
 
     setupEventListeners() {
         // Canvas events
+        const supportsPointer = 'PointerEvent' in window;
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        this.canvas.addEventListener('pointermove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('pointerdown', (e) => this.handleClick(e));
+        if (supportsPointer) {
+            this.canvas.addEventListener('pointermove', (e) => this.handleMouseMove(e));
+            this.canvas.addEventListener('pointerdown', (e) => this.handleClick(e));
+        } else {
+            this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        }
         this.canvas.addEventListener('mouseleave', () => {
             this.hoverPos = null;
             this.render();
