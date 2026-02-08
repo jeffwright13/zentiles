@@ -325,6 +325,9 @@ class GameEngine {
         if (!this.state.board.canPlacePiece(this.state.currentPiece, origin)) {
             return false;
         }
+        // Save undo snapshot BEFORE any state changes
+        this.saveUndoSnapshot();
+
         this.state.board.placePiece(this.state.currentPiece, origin);
         this.state.piecesPlaced++;
         const rows = this.state.board.getFullRows();
@@ -340,9 +343,6 @@ class GameEngine {
         this.checkLevelUp();
         this.advancePiece();
         this.state.reserveUsedThisTurn = false;
-        
-        // Save undo snapshot AFTER all operations are complete
-        this.saveUndoSnapshot();
         
         return cleared > 0 ? { cleared, rows, cols } : true;
     }
