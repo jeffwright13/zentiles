@@ -1071,6 +1071,20 @@ class ZenTilesApp {
             this.validPlacements.some(([x, y]) => x === this.hoverPos[0] && y === this.hoverPos[1])) {
             const hoverColor = this.hexToRgba(cellFilled, 0.6);
             this.drawPiece(this.engine.state.currentPiece, this.hoverPos, hoverColor);
+
+            // Anchor highlight (upper-left placement cell)
+            const anchorColor = this.hexToRgba(cellFilled, 0.95);
+            const [anchorX, anchorY] = this.hoverPos;
+            this.ctx.save();
+            this.ctx.strokeStyle = anchorColor;
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(
+                anchorX * this.cellSize + 3,
+                anchorY * this.cellSize + 3,
+                this.cellSize - 6,
+                this.cellSize - 6
+            );
+            this.ctx.restore();
         }
     }
 
