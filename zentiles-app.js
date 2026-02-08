@@ -570,6 +570,8 @@ class ZenTilesApp {
         // Canvas events
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        this.canvas.addEventListener('pointermove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('pointerdown', (e) => this.handleClick(e));
         this.canvas.addEventListener('mouseleave', () => {
             this.hoverPos = null;
             this.render();
@@ -812,10 +814,22 @@ class ZenTilesApp {
         modal.classList.remove('active');
     }
 
-    handleMouseMove(e) {
+    getBoardCellFromEvent(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / this.cellSize);
-        const y = Math.floor((e.clientY - rect.top) / this.cellSize);
+        const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+        const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+        if (clientX == null || clientY == null) return null;
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        const x = Math.floor(((clientX - rect.left) * scaleX) / this.cellSize);
+        const y = Math.floor(((clientY - rect.top) * scaleY) / this.cellSize);
+        return [x, y];
+    }
+
+    handleMouseMove(e) {
+        const cell = this.getBoardCellFromEvent(e);
+        if (!cell) return;
+        const [x, y] = cell;
         
         if (x !== this.hoverPos?.[0] || y !== this.hoverPos?.[1]) {
             this.hoverPos = [x, y];
@@ -824,8 +838,9 @@ class ZenTilesApp {
     }
 
     handleClick(e) {
-        if (this.hoverPos) {
-            this.placePiece(this.hoverPos);
+        const cell = this.getBoardCellFromEvent(e);
+        if (cell) {
+            this.placePiece(cell);
         }
     }
 
