@@ -1313,7 +1313,7 @@ class ZenTilesApp {
         }
 
         messageEl.textContent = text;
-        messageEl.className = `message ${type}`;
+        messageEl.className = `board-message message ${type}`;
         messageEl.style.display = 'block';
 
         if (!persistentKey) {
@@ -1321,7 +1321,7 @@ class ZenTilesApp {
                 this._messageHideTimeoutId = null;
                 if (this._persistentMessage) {
                     messageEl.textContent = this._persistentMessage.text;
-                    messageEl.className = `message ${this._persistentMessage.type}`;
+                    messageEl.className = `board-message message ${this._persistentMessage.type}`;
                     messageEl.style.display = 'block';
                 } else {
                     messageEl.style.display = 'none';
