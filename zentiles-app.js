@@ -920,6 +920,7 @@ class ZenTilesApp {
             this.showMessage(`Cleared ${result.cleared} line${result.cleared > 1 ? 's' : ''}`, 'success');
         }
         
+        this.hoverPos = null;
         this.engine.saveGame();
         this.updateUI();
         this.render();
