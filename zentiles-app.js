@@ -65,6 +65,11 @@ class Piece {
         const ys = this.cells.map(([x, y]) => y);
         return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
     }
+
+    getFirstCellOffset() {
+        if (!this.cells || this.cells.length === 0) return [0, 0];
+        return this.cells[0];
+    }
 }
 
 class Board {
@@ -842,6 +847,16 @@ class ZenTilesApp {
         this.render();
     }
 
+    cellToOrigin(cell) {
+        const [fx, fy] = this.engine.state.currentPiece.getFirstCellOffset();
+        return [cell[0] - fx, cell[1] - fy];
+    }
+
+    originToFirstCell(origin) {
+        const [fx, fy] = this.engine.state.currentPiece.getFirstCellOffset();
+        return [origin[0] + fx, origin[1] + fy];
+    }
+
     handlePointerMove(e) {
         const cell = this.getBoardCellFromEvent(e);
         if (!cell) return;
@@ -861,7 +876,7 @@ class ZenTilesApp {
         const [startX, startY] = this.pointerDownCell || [];
         this.pointerDownCell = null;
         if (startX === x && startY === y) {
-            this.placePiece(cell);
+            this.placePiece(this.cellToOrigin(cell));
         }
     }
 
@@ -883,7 +898,7 @@ class ZenTilesApp {
     handleClick(e) {
         const cell = this.getBoardCellFromEvent(e);
         if (cell) {
-            this.placePiece(cell);
+            this.placePiece(this.cellToOrigin(cell));
         }
     }
 
@@ -1092,38 +1107,41 @@ class ZenTilesApp {
             }
         }
         
-        // Draw valid placements hints
+        // Draw valid placements hints (show at first-cell position)
         if (this.showHints) {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-            for (const [x, y] of this.validPlacements) {
+            for (const [ox, oy] of this.validPlacements) {
+                const [hx, hy] = this.originToFirstCell([ox, oy]);
                 this.ctx.fillRect(
-                    x * this.cellSize + 4,
-                    y * this.cellSize + 4,
+                    hx * this.cellSize + 4,
+                    hy * this.cellSize + 4,
                     this.cellSize - 8,
                     this.cellSize - 8
                 );
             }
         }
         
-        // Draw hover piece preview
-        if (this.hoverPos && 
-            this.validPlacements.some(([x, y]) => x === this.hoverPos[0] && y === this.hoverPos[1])) {
-            const hoverColor = this.hexToRgba(cellFilled, 0.6);
-            this.drawPiece(this.engine.state.currentPiece, this.hoverPos, hoverColor);
+        // Draw hover piece preview (hoverPos is the tapped/hovered cell = first-cell position)
+        if (this.hoverPos) {
+            const origin = this.cellToOrigin(this.hoverPos);
+            if (this.validPlacements.some(([x, y]) => x === origin[0] && y === origin[1])) {
+                const hoverColor = this.hexToRgba(cellFilled, 0.6);
+                this.drawPiece(this.engine.state.currentPiece, origin, hoverColor);
 
-            // Anchor highlight (upper-left placement cell)
-            const anchorColor = this.hexToRgba(cellFilled, 0.95);
-            const [anchorX, anchorY] = this.hoverPos;
-            this.ctx.save();
-            this.ctx.strokeStyle = anchorColor;
-            this.ctx.lineWidth = 3;
-            this.ctx.strokeRect(
-                anchorX * this.cellSize + 3,
-                anchorY * this.cellSize + 3,
-                this.cellSize - 6,
-                this.cellSize - 6
-            );
-            this.ctx.restore();
+                // Anchor highlight (first filled cell = where user tapped/hovered)
+                const anchorColor = this.hexToRgba(cellFilled, 0.95);
+                const [anchorX, anchorY] = this.hoverPos;
+                this.ctx.save();
+                this.ctx.strokeStyle = anchorColor;
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(
+                    anchorX * this.cellSize + 3,
+                    anchorY * this.cellSize + 3,
+                    this.cellSize - 6,
+                    this.cellSize - 6
+                );
+                this.ctx.restore();
+            }
         }
     }
 
