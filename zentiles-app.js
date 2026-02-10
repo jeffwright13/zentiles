@@ -183,6 +183,8 @@ class GameState {
         this.pieceSpawnCounts = Array(12).fill(0);
         this.pieceSpawnTotal = 0;
         this.difficulty = 'normal';
+        this.variety = false;
+        this.recentShapes = [];
         this.useDeterministicRng = false;
         this.rngSeed = (typeof crypto !== 'undefined' && crypto.getRandomValues)
             ? crypto.getRandomValues(new Uint32Array(1))[0]
@@ -233,6 +235,8 @@ class GameEngine {
             state.pieceSpawnCounts = data.pieceSpawnCounts;
             state.pieceSpawnTotal = data.pieceSpawnTotal;
             state.difficulty = data.difficulty;
+            state.variety = data.variety || false;
+            state.recentShapes = data.recentShapes || [];
             state.useDeterministicRng = data.useDeterministicRng;
             state.rngSeed = data.rngSeed;
 
@@ -296,6 +300,8 @@ class GameEngine {
                 pieceSpawnCounts: s.pieceSpawnCounts,
                 pieceSpawnTotal: s.pieceSpawnTotal,
                 difficulty: s.difficulty,
+                variety: s.variety,
+                recentShapes: s.recentShapes ? [...s.recentShapes] : [],
                 useDeterministicRng: s.useDeterministicRng,
                 rngSeed: s.rngSeed,
                 board: { width: s.board.width, height: s.board.height, occupied: s.board.occupied },
@@ -390,6 +396,8 @@ class GameEngine {
         this.state.pieceSpawnCounts = snapshot.pieceSpawnCounts;
         this.state.pieceSpawnTotal = snapshot.pieceSpawnTotal;
         this.state.difficulty = snapshot.difficulty;
+        this.state.variety = snapshot.variety;
+        this.state.recentShapes = snapshot.recentShapes || [];
         this.state.useDeterministicRng = snapshot.useDeterministicRng;
         this.state.rngSeed = snapshot.rngSeed;
         
@@ -495,21 +503,30 @@ class GameEngine {
 
     spawnNextPiece() {
         const unlockedCount = this.state.getUnlockedPieceCount();
+        const maxRetries = this.state.variety ? 3 : 0;
         let pieceIndex;
-        if (this.state.difficulty === 'hard') {
-            pieceIndex = Math.floor(this.random() * unlockedCount);
-        } else {
-            const weights = [3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1].slice(0, unlockedCount);
-            const totalWeight = weights.reduce((a, b) => a + b, 0);
-            let random = this.random() * totalWeight;
-            pieceIndex = 0;
-            for (let i = 0; i < weights.length; i++) {
-                random -= weights[i];
-                if (random <= 0) {
-                    pieceIndex = i;
-                    break;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            if (this.state.difficulty === 'hard') {
+                pieceIndex = Math.floor(this.random() * unlockedCount);
+            } else {
+                const weights = [3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1].slice(0, unlockedCount);
+                const totalWeight = weights.reduce((a, b) => a + b, 0);
+                let random = this.random() * totalWeight;
+                pieceIndex = 0;
+                for (let i = 0; i < weights.length; i++) {
+                    random -= weights[i];
+                    if (random <= 0) {
+                        pieceIndex = i;
+                        break;
+                    }
                 }
             }
+            if (!this.state.variety || this.state.recentShapes.length < 2 ||
+                !(this.state.recentShapes[0] === pieceIndex && this.state.recentShapes[1] === pieceIndex)) break;
+        }
+        if (this.state.variety) {
+            this.state.recentShapes.push(pieceIndex);
+            if (this.state.recentShapes.length > 2) this.state.recentShapes.shift();
         }
         const piece = new Piece(pieceIndex);
         piece.rotate(Math.floor(this.random() * 4));
@@ -655,6 +672,18 @@ class ZenTilesApp {
                 this.useDeterministicRng = !this.useDeterministicRng;
                 deterministicToggle.classList.toggle('active', this.useDeterministicRng);
                 this.engine.state.useDeterministicRng = this.useDeterministicRng;
+            });
+        }
+
+        // Variety (anti-repeat) toggle
+        const varietyToggle = document.getElementById('varietyToggle');
+        if (varietyToggle) {
+            varietyToggle.classList.toggle('active', this.engine.state.variety);
+            varietyToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.engine.state.variety = !this.engine.state.variety;
+                varietyToggle.classList.toggle('active', this.engine.state.variety);
+                this.engine.saveGame();
             });
         }
 
