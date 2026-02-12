@@ -206,6 +206,8 @@ class GameState {
 
 class GameEngine {
     static SAVE_KEY = 'zentiles-save';
+    static MAX_CLEAN_CLEAR_CHARGES = 5;
+    static MAX_UNDO_CHARGES = 10;
 
     constructor(state = null) {
         this.state = state || new GameState();
@@ -348,7 +350,10 @@ class GameEngine {
         
         // Check if board is completely empty after clearing - award additional Clean Clear
         if (this.state.board.isBoardEmpty() && cleared > 0) {
-            this.state.cleanClearCharges++;
+            if (this.state.cleanClearCharges < GameEngine.MAX_CLEAN_CLEAR_CHARGES) {
+                this.state.cleanClearCharges++;
+                this.onCleanClearEarned();
+            }
         }
         
         this.checkLevelUp();
@@ -462,6 +467,7 @@ class GameEngine {
     }
 
     checkLevelUp() {
+        const previousLevel = this.state.level;
         if (this.state.linesClearedTotal >= this.state.linesAtLevelStart + this.state.linesToNextLevel) {
             this.state.level++;
             this.state.linesAtLevelStart = this.state.linesClearedTotal;
@@ -470,13 +476,48 @@ class GameEngine {
             if (newSize !== this.state.board.width) {
                 this.state.board.resize(newSize, newSize);
             }
-            this.state.undoCharges++;
-            if (this.state.level % 5 === 0) {
-                this.state.cleanClearCharges++;
+            if (this.state.undoCharges < GameEngine.MAX_UNDO_CHARGES) {
+                this.state.undoCharges++;
+                this.onUndoChargeEarned();
             }
+            if (this.state.level % 5 === 0) {
+                if (this.state.cleanClearCharges < GameEngine.MAX_CLEAN_CLEAR_CHARGES) {
+                    this.state.cleanClearCharges++;
+                    this.onCleanClearEarned();
+                }
+            }
+            
+            // Check for newly unlocked swap slots
+            const previousUnlockedSlots = Math.min(3, Math.floor(previousLevel / 5));
+            const currentUnlockedSlots = Math.min(3, Math.floor(this.state.level / 5));
+            if (currentUnlockedSlots > previousUnlockedSlots) {
+                this.onSwapSlotUnlocked(currentUnlockedSlots);
+            }
+            
             return true;
         }
         return false;
+    }
+
+    onCleanClearEarned() {
+        // This will be implemented by the Game class
+        if (this.onAchievementCallback) {
+            this.onAchievementCallback('cleanClear');
+        }
+    }
+
+    onUndoChargeEarned() {
+        // This will be implemented by the Game class
+        if (this.onAchievementCallback) {
+            this.onAchievementCallback('undo');
+        }
+    }
+
+    onSwapSlotUnlocked(slotNumber) {
+        // This will be implemented by the Game class
+        if (this.onAchievementCallback) {
+            this.onAchievementCallback('swap', { slotNumber });
+        }
     }
 
     advancePiece() {
@@ -552,6 +593,9 @@ class ZenTilesApp {
         
         this.engine = GameEngine.loadGame() || new GameEngine();
         this.themeManager = getThemeManager();
+        
+        // Set up achievement callback
+        this.engine.onAchievementCallback = (type, data) => this.handleAchievement(type, data);
         
         this.cellSize = 68;
         this.hoverPos = null;
@@ -996,9 +1040,35 @@ class ZenTilesApp {
         }
     }
 
+    handleAchievement(type, data) {
+        switch (type) {
+            case 'cleanClear':
+                const maxClean = GameEngine.MAX_CLEAN_CLEAR_CHARGES;
+                const currentClean = this.engine.state.cleanClearCharges;
+                const cleanMsg = currentClean >= maxClean 
+                    ? `Clean Clear earned! (Maximum ${maxClean} charges reached)`
+                    : `Clean Clear earned! (${currentClean} charges)`;
+                this.showMessage(cleanMsg, 'success', { durationMs: 3000 });
+                break;
+            case 'undo':
+                const maxUndo = GameEngine.MAX_UNDO_CHARGES;
+                const currentUndo = this.engine.state.undoCharges;
+                const undoMsg = currentUndo >= maxUndo
+                    ? `Undo charge earned! (Maximum ${maxUndo} charges reached)`
+                    : `Undo charge earned! (${currentUndo} charges)`;
+                this.showMessage(undoMsg, 'info', { durationMs: 3000 });
+                break;
+            case 'swap':
+                const slotNumber = data?.slotNumber || 1;
+                this.showMessage(`Swap slot ${slotNumber} unlocked!`, 'success', { durationMs: 3000 });
+                break;
+        }
+    }
+
     newGame() {
         GameEngine.clearSavedGame();
         this.engine = new GameEngine();
+        this.engine.onAchievementCallback = (type, data) => this.handleAchievement(type, data);
         this.engine.state.useDeterministicRng = this.useDeterministicRng;
         this.engine.saveGame();
         this.setupCanvas();
@@ -1267,7 +1337,9 @@ class ZenTilesApp {
         const pieceWidth = bounds[2] - bounds[0] + 1;
         const pieceHeight = bounds[3] - bounds[1] + 1;
         
-        const cellSize = Math.min(32 / pieceWidth, 32 / pieceHeight);
+        // Use a smaller base cell size to ensure more border visibility
+        const maxCellSize = 24; // Reduced from 32 to ensure border visibility
+        const cellSize = Math.min(maxCellSize / pieceWidth, maxCellSize / pieceHeight);
         const offsetX = (canvas.width - pieceWidth * cellSize) / 2;
         const offsetY = (canvas.height - pieceHeight * cellSize) / 2;
         
