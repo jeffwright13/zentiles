@@ -732,7 +732,10 @@ class ZenTilesApp {
         }
 
         // Listen for theme changes
-        this.themeManager.on('themeChange', () => this.render());
+        this.themeManager.on('themeChange', () => {
+            this.render();
+            this.updateUI(); // Update swap slot colors
+        });
     }
 
     updateTooltips() {
