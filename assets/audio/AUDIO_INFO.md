@@ -26,25 +26,35 @@ This directory contains ambient audio files for the theme system.
 
 ## License Information
 
-### meditation-yoga-relaxing-music.mp3
+### Meditation Yoga Relaxing Music
 - **Artist**: Genti Guxholli
 - **Source**: [Pixabay](https://pixabay.com/music/ambient-meditation-yoga-relaxing-music-371413/)
 - **License**: Pixabay Content License
 
-### sea_waves.mp3
-- **Artist**: Michael Koreli
-- **Source**: [Pixabay](https://pixabay.com/sound-effects/sea-waves-169411/)
-- **License**: Pixabay License (CC0-equivalent)
-
-### lunar_new_year.mp3
+### Lunar New Year
 - **Artist**: Alex-Productions
 - **Source**: [Free Music Archive](https://freemusicarchive.org/music/alex-productions/single/lunar-new-year/)
 - **License**: Creative Commons
 
-### river_and_birds.mp3
+### River and Birds
 - **Artist**: Richard Vogt (Garuda1982)
 - **Source**: [Freesound.org](https://freesound.org/people/Garuda1982/)
 - **License**: CC-BY 4.0
+
+### Surf, Waves and Sea Foam
+- ***Artist***: 9516daniel
+- ***Source***: https://freesound.org/s/843570/
+- ***License***: Creative Commons 0
+
+### Native American Style Flute in A
+- **Artist**: Wood_Flutes
+- **Source**: https://freesound.org/s/333996/
+- **License**: Attribution 3.0
+
+### Brilliance
+- ***Artist***: unknown
+- ***Source***: unknown
+- ***License***: unknown
 
 ## Recommended Sources
 
