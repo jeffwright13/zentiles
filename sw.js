@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zentiles-v3';
+const CACHE_NAME = 'zentiles-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -7,10 +7,12 @@ const STATIC_ASSETS = [
   './themes/theme-config.js',
   './themes/audio-controller.js',
   './themes/theme-manager.js',
+  './assets/audio/lunar_new_year.mp3',
   './assets/audio/meditation-yoga-relaxing-music.mp3',
   './assets/audio/river_and_birds.mp3',
-  './assets/audio/sea_waves.mp3',
-  './assets/audio/lunar_new_year.mp3',
+  './assets/audio/surf-waves-and-sea-foam.mp3',
+  './assets/audio/brilliance.mp3',
+  './assets/audio/native-american-style-flute-in-a.mp3',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
