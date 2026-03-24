@@ -15,6 +15,7 @@ export class AudioController {
         this.isMuted = false;
         this.volume = AUDIO_CONFIG.defaultVolume;
         this.fadeInterval = null;
+        this.crossfadeInterval = null;
         this.trackEndHandler = null;
     }
 
@@ -185,27 +186,35 @@ export class AudioController {
         const steps = 30;
         const stepTime = duration / steps;
         const volumeStep = this.volume / steps;
-        
+
         let currentStep = 0;
-        
+
+        // Cancel any in-progress crossfade
+        clearInterval(this.crossfadeInterval);
+
+        // Remove ended listener from old track so it doesn't trigger next-track logic
+        if (this.trackEndHandler && fromAudio) {
+            fromAudio.removeEventListener('ended', this.trackEndHandler);
+            this.trackEndHandler = null;
+        }
+
         toAudio.volume = 0;
         toAudio.play().catch(() => {});
-        
-        this.setupTrackEndHandler();
 
-        const fadeInterval = setInterval(() => {
+        this.crossfadeInterval = setInterval(() => {
             currentStep++;
-            
+
             if (fromAudio) {
                 fromAudio.volume = Math.max(0, (this.isMuted ? 0 : this.volume) - (volumeStep * currentStep));
             }
             toAudio.volume = Math.min(this.isMuted ? 0 : this.volume, volumeStep * currentStep);
-            
+
             if (currentStep >= steps) {
-                clearInterval(fadeInterval);
+                clearInterval(this.crossfadeInterval);
                 if (fromAudio) {
                     fromAudio.pause();
-                    fromAudio.src = '';
+                    // Don't set src='' — it triggers a spurious error event that
+                    // permanently marks the track as failed.
                 }
                 this.currentAudio = toAudio;
                 this.setupTrackEndHandler();
@@ -285,6 +294,7 @@ export class AudioController {
      */
     stop() {
         clearInterval(this.fadeInterval);
+        clearInterval(this.crossfadeInterval);
         
         if (this.currentAudio) {
             this.currentAudio.pause();
