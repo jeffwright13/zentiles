@@ -16,7 +16,7 @@ export class AudioController {
         this.volume = AUDIO_CONFIG.defaultVolume;
         this.fadeInterval = null;
         this.crossfadeInterval = null;
-        this.pendingAudio = null;
+        this.outgoingAudio = null;
         this.trackEndHandler = null;
     }
 
@@ -183,48 +183,51 @@ export class AudioController {
      * Crossfade between two audio tracks
      */
     crossfade(fromAudio, toAudio) {
-        const duration = AUDIO_CONFIG.crossfadeDuration;
-        const steps = 30;
-        const stepTime = duration / steps;
-        const volumeStep = this.volume / steps;
-
-        let currentStep = 0;
-
-        // Cancel any in-progress crossfade and stop any orphaned pending audio
+        // Cancel any in-progress crossfade and immediately stop the fading-out audio.
+        // This prevents orphaned audio when the user skips rapidly.
         clearInterval(this.crossfadeInterval);
-        if (this.pendingAudio && this.pendingAudio !== fromAudio) {
-            this.pendingAudio.pause();
-            this.pendingAudio = null;
+        if (this.outgoingAudio) {
+            this.outgoingAudio.pause();
+            this.outgoingAudio = null;
         }
 
-        // Remove ended listener from old track so it doesn't trigger next-track logic
+        // Remove ended listener from the track being replaced
         if (this.trackEndHandler && fromAudio) {
             fromAudio.removeEventListener('ended', this.trackEndHandler);
             this.trackEndHandler = null;
         }
 
-        this.pendingAudio = toAudio;
+        // Immediately promote toAudio to currentAudio so that pause(), play(),
+        // and further skips always target the right element mid-crossfade.
+        this.outgoingAudio = fromAudio;
+        this.currentAudio = toAudio;
+
         toAudio.volume = 0;
         toAudio.play().catch(() => {});
+        this.setupTrackEndHandler();
+
+        const steps = 30;
+        const stepTime = AUDIO_CONFIG.crossfadeDuration / steps;
+        const volumeStep = this.volume / steps;
+        let currentStep = 0;
 
         this.crossfadeInterval = setInterval(() => {
             currentStep++;
 
-            if (fromAudio) {
-                fromAudio.volume = Math.max(0, (this.isMuted ? 0 : this.volume) - (volumeStep * currentStep));
+            if (this.outgoingAudio) {
+                this.outgoingAudio.volume = Math.max(0, (this.isMuted ? 0 : this.volume) - volumeStep * currentStep);
             }
-            toAudio.volume = Math.min(this.isMuted ? 0 : this.volume, volumeStep * currentStep);
+            // Only adjust toAudio volume if it hasn't been paused by the user
+            if (!toAudio.paused) {
+                toAudio.volume = Math.min(this.isMuted ? 0 : this.volume, volumeStep * currentStep);
+            }
 
             if (currentStep >= steps) {
                 clearInterval(this.crossfadeInterval);
-                if (fromAudio) {
-                    fromAudio.pause();
-                    // Don't set src='' — it triggers a spurious error event that
-                    // permanently marks the track as failed.
+                if (this.outgoingAudio) {
+                    this.outgoingAudio.pause();
+                    this.outgoingAudio = null;
                 }
-                this.currentAudio = toAudio;
-                this.pendingAudio = null;
-                this.setupTrackEndHandler();
             }
         }, stepTime);
     }
@@ -290,7 +293,15 @@ export class AudioController {
      */
     pause() {
         if (!this.currentAudio || !this.isPlaying) return;
-        
+
+        // Cancel any crossfade and immediately stop the fading-out audio so nothing
+        // keeps playing behind the scenes after the user hits Pause.
+        clearInterval(this.crossfadeInterval);
+        if (this.outgoingAudio) {
+            this.outgoingAudio.pause();
+            this.outgoingAudio = null;
+        }
+
         this.fadeOut(this.currentAudio, () => {
             this.isPlaying = false;
         });
@@ -309,9 +320,9 @@ export class AudioController {
             this.currentAudio = null;
         }
         
-        if (this.pendingAudio) {
-            this.pendingAudio.pause();
-            this.pendingAudio = null;
+        if (this.outgoingAudio) {
+            this.outgoingAudio.pause();
+            this.outgoingAudio = null;
         }
 
         if (this.nextAudio) {
