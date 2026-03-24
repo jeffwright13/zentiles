@@ -16,6 +16,7 @@ export class AudioController {
         this.volume = AUDIO_CONFIG.defaultVolume;
         this.fadeInterval = null;
         this.crossfadeInterval = null;
+        this.pendingAudio = null;
         this.trackEndHandler = null;
     }
 
@@ -189,8 +190,12 @@ export class AudioController {
 
         let currentStep = 0;
 
-        // Cancel any in-progress crossfade
+        // Cancel any in-progress crossfade and stop any orphaned pending audio
         clearInterval(this.crossfadeInterval);
+        if (this.pendingAudio && this.pendingAudio !== fromAudio) {
+            this.pendingAudio.pause();
+            this.pendingAudio = null;
+        }
 
         // Remove ended listener from old track so it doesn't trigger next-track logic
         if (this.trackEndHandler && fromAudio) {
@@ -198,6 +203,7 @@ export class AudioController {
             this.trackEndHandler = null;
         }
 
+        this.pendingAudio = toAudio;
         toAudio.volume = 0;
         toAudio.play().catch(() => {});
 
@@ -217,6 +223,7 @@ export class AudioController {
                     // permanently marks the track as failed.
                 }
                 this.currentAudio = toAudio;
+                this.pendingAudio = null;
                 this.setupTrackEndHandler();
             }
         }, stepTime);
@@ -302,12 +309,17 @@ export class AudioController {
             this.currentAudio = null;
         }
         
+        if (this.pendingAudio) {
+            this.pendingAudio.pause();
+            this.pendingAudio = null;
+        }
+
         if (this.nextAudio) {
             this.nextAudio.pause();
             this.nextAudio.src = '';
             this.nextAudio = null;
         }
-        
+
         this.isPlaying = false;
     }
 
