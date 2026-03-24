@@ -839,8 +839,11 @@ class ZenTilesApp {
         };
 
         buildTrackList();
-        // Rebuild list whenever the theme changes
-        this.themeManager.on('themeChange', buildTrackList);
+        // On theme change: rebuild the list and reset play state (audio stops on theme switch)
+        this.themeManager.on('themeChange', () => {
+            buildTrackList();
+            setPlaying(false);
+        });
 
         // Play/Pause
         playPauseBtn.addEventListener('click', () => {

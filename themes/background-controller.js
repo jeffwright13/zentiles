@@ -87,14 +87,20 @@ export class BackgroundController {
     }
 
     /**
-     * Preload background images
+     * Preload background images via <link rel="prefetch"> to avoid
+     * OpaqueResponseBlocking errors that occur with new Image() for
+     * cross-origin resources in Firefox.
      */
     preloadImages() {
         const preloadCount = Math.min(BACKGROUND_CONFIG.preloadCount, this.backgrounds.length);
-        
         for (let i = 0; i < preloadCount; i++) {
-            const img = new Image();
-            img.src = this.backgrounds[i].url;
+            const url = this.backgrounds[i].url;
+            if (!url?.startsWith('http')) continue; // skip local/gradient entries
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.as = 'image';
+            link.href = url;
+            document.head.appendChild(link);
         }
     }
 
