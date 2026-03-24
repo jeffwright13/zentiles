@@ -148,29 +148,86 @@ export class AudioController {
     }
 
     /**
-     * Play the next track in the playlist
+     * Returns indices of tracks eligible for cycling (not failed, not disabled).
+     */
+    _enabledIndices() {
+        return this.tracks
+            .map((t, i) => i)
+            .filter(i => !this.tracks[i].failed && this.tracks[i].enabled !== false);
+    }
+
+    /**
+     * Play the next track in the playlist (skips disabled tracks)
      */
     playNextTrack() {
-        this.currentTrackIndex = (this.currentTrackIndex + 1) % this.tracks.length;
-        
+        const enabled = this._enabledIndices();
+        if (enabled.length === 0) return;
+        const pos = enabled.indexOf(this.currentTrackIndex);
+        this.currentTrackIndex = enabled[(pos + 1) % enabled.length];
+
         const nextAudio = this.preloadTrack(this.currentTrackIndex);
         if (!nextAudio) return;
-
-        // Crossfade to next track
         this.crossfade(this.currentAudio, nextAudio);
     }
 
     /**
-     * Play the previous track in the playlist
+     * Play the previous track in the playlist (skips disabled tracks)
      */
     playPrevTrack() {
-        this.currentTrackIndex = (this.currentTrackIndex - 1 + this.tracks.length) % this.tracks.length;
-        
+        const enabled = this._enabledIndices();
+        if (enabled.length === 0) return;
+        const pos = enabled.indexOf(this.currentTrackIndex);
+        this.currentTrackIndex = enabled[(pos - 1 + enabled.length) % enabled.length];
+
         const prevAudio = this.preloadTrack(this.currentTrackIndex);
         if (!prevAudio) return;
-
-        // Crossfade to previous track
         this.crossfade(this.currentAudio, prevAudio);
+    }
+
+    /**
+     * Jump directly to a specific track by index and start playing it.
+     */
+    jumpToTrack(index) {
+        if (index < 0 || index >= this.tracks.length) return;
+        this.currentTrackIndex = index;
+        const audio = this.preloadTrack(index);
+        if (!audio) return;
+        if (this.currentAudio) {
+            this.crossfade(this.currentAudio, audio);
+        } else {
+            this.currentAudio = audio;
+            this.setupTrackEndHandler();
+            audio.play()
+                .then(() => { this.fadeIn(audio); this.isPlaying = true; })
+                .catch(() => { console.log('Audio playback requires user interaction first.'); });
+        }
+        this.isPlaying = true;
+    }
+
+    /**
+     * Enable or disable a track in the rotation.
+     * If the currently-playing track is disabled, skip to the next enabled one.
+     */
+    setTrackEnabled(index, enabled) {
+        if (!this.tracks[index]) return;
+        this.tracks[index].enabled = enabled;
+        if (!enabled && index === this.currentTrackIndex && this.isPlaying) {
+            this.playNextTrack();
+        }
+    }
+
+    /**
+     * Return a snapshot of all tracks with their current state.
+     */
+    getTracks() {
+        return this.tracks.map((t, i) => ({
+            name: t.name,
+            url: t.url,
+            index: i,
+            enabled: t.enabled !== false,
+            failed: !!t.failed,
+            isCurrent: i === this.currentTrackIndex,
+        }));
     }
 
     /**

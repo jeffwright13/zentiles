@@ -786,68 +786,84 @@ class ZenTilesApp {
         const nextTrackBtn = document.getElementById('nextTrackBtn');
         const repeatBtn = document.getElementById('repeatBtn');
         const volumeSlider = document.getElementById('volumeSlider');
-        const trackName = document.getElementById('trackName');
 
-        // Guard against missing UI elements (prevents init from failing)
-        if (!playPauseBtn || !prevTrackBtn || !nextTrackBtn || !volumeSlider || !trackName) return;
+        if (!playPauseBtn || !prevTrackBtn || !nextTrackBtn || !volumeSlider) return;
+
+        const PAUSE_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>`;
+        const PLAY_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>`;
+
+        const setPlaying = (playing) => {
+            this.isPlaying = playing;
+            playPauseBtn.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+        };
+
+        // Build (or rebuild) the track list from current theme tracks
+        const buildTrackList = () => {
+            const trackList = document.getElementById('trackList');
+            if (!trackList) return;
+            trackList.innerHTML = '';
+            this.themeManager.getTracks().forEach(track => {
+                const item = document.createElement('div');
+                item.className = 'track-item';
+                item.dataset.index = track.index;
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = track.enabled;
+                cb.title = 'Include in rotation';
+                cb.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.themeManager.setTrackEnabled(track.index, cb.checked);
+                });
+
+                const name = document.createElement('span');
+                name.className = 'track-item-name';
+                name.textContent = track.name;
+
+                item.appendChild(cb);
+                item.appendChild(name);
+
+                // Clicking the row (not checkbox) jumps to that track immediately
+                item.addEventListener('click', (e) => {
+                    if (e.target === cb) return;
+                    this.themeManager.jumpToTrack(track.index);
+                    setPlaying(true);
+                });
+
+                trackList.appendChild(item);
+            });
+        };
+
+        buildTrackList();
+        // Rebuild list whenever the theme changes
+        this.themeManager.on('themeChange', buildTrackList);
 
         // Play/Pause
         playPauseBtn.addEventListener('click', () => {
             if (this.isPlaying) {
                 this.themeManager.pauseMusic();
-                this.isPlaying = false;
-                playPauseBtn.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21 5 3"/>
-                    </svg>
-                `;
-                trackName.textContent = 'Paused';
+                setPlaying(false);
             } else {
                 this.themeManager.playMusic();
-                this.isPlaying = true;
-                playPauseBtn.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                `;
-                this.updateTrackName();
+                setPlaying(true);
             }
         });
 
-        // Previous Track
+        // Previous / Next
         prevTrackBtn.addEventListener('click', () => {
             this.themeManager.prevTrack();
-            if (!this.isPlaying) {
-                this.themeManager.playMusic();
-                this.isPlaying = true;
-                playPauseBtn.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                `;
-            }
-            this.updateTrackName();
+            setPlaying(true);
         });
-
-        // Next Track
         nextTrackBtn.addEventListener('click', () => {
             this.themeManager.nextTrack();
-            if (!this.isPlaying) {
-                this.themeManager.playMusic();
-                this.isPlaying = true;
-                playPauseBtn.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                `;
-            }
-            this.updateTrackName();
+            setPlaying(true);
         });
 
-        // Repeat Toggle
+        // Repeat
         if (repeatBtn) {
             repeatBtn.classList.toggle('active', this.isRepeat);
             repeatBtn.addEventListener('click', () => {
@@ -859,37 +875,25 @@ class ZenTilesApp {
 
         // Volume
         volumeSlider.addEventListener('input', (e) => {
-            const volume = parseInt(e.target.value) / 100;
-            this.themeManager.setVolume(volume);
+            this.themeManager.setVolume(parseInt(e.target.value) / 100);
         });
 
-        // Update timeline and track name periodically
-        setInterval(() => {
-            this.updateAudioDisplay();
-        }, 500);
+        // Periodically update the now-playing highlight in the track list
+        setInterval(() => this.updateAudioDisplay(), 500);
     }
 
     updateAudioDisplay() {
         const trackInfo = this.themeManager.getAudioState();
-        const trackName = document.getElementById('trackName');
-        
-        if (trackInfo && trackInfo.name && this.isPlaying) {
-            trackName.textContent = trackInfo.name;
-        }
+        document.querySelectorAll('.track-item').forEach(el => {
+            const isCurrent = trackInfo && parseInt(el.dataset.index) === trackInfo.index;
+            el.classList.toggle('now-playing', this.isPlaying && isCurrent);
+        });
     }
 
     formatTime(seconds) {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    updateTrackName() {
-        const trackInfo = this.themeManager.getAudioState();
-        const trackName = document.getElementById('trackName');
-        if (trackInfo && trackInfo.name) {
-            trackName.textContent = trackInfo.name;
-        }
     }
 
     openThemeModal() {

@@ -494,19 +494,19 @@
         .settings-audio {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
-        .settings-audio .track-name {
-            font-size: 0.85em;
-            opacity: 0.9;
+        .settings-audio .audio-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
         }
 
         .settings-audio .audio-buttons {
             display: flex;
-            gap: 8px;
-            justify-content: center;
-            padding: 8px 0;
+            gap: 6px;
         }
 
         .settings-audio .audio-buttons .icon-btn.small {
@@ -518,35 +518,88 @@
             background: var(--theme-primary);
         }
 
-        .settings-audio .volume-row {
+        .settings-audio .audio-volume {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 6px;
-            padding-top: 8px;
+            gap: 5px;
+            opacity: 0.75;
         }
 
-        .settings-audio .volume-slider-vertical {
-            width: 4px;
-            height: 60px;
-            -webkit-appearance: slider-vertical;
-            appearance: slider-vertical;
-            writing-mode: vertical-lr;
-            direction: rtl;
+        .settings-audio .audio-volume input[type="range"] {
+            width: 56px;
+            height: 4px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
             outline: none;
             cursor: pointer;
-        }
-
-        .settings-audio .volume-slider-vertical::-webkit-slider-thumb {
+            accent-color: var(--theme-primary);
             -webkit-appearance: none;
             appearance: none;
-            width: 14px;
-            height: 14px;
+        }
+
+        .settings-audio .audio-volume input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
             background: var(--theme-primary);
             border-radius: 50%;
             cursor: pointer;
+        }
+
+        .track-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-top: 6px;
+            border-top: 1px solid var(--theme-card-border);
+        }
+
+        .track-list::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .track-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.82em;
+            transition: background 0.15s;
+            user-select: none;
+        }
+
+        .track-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .track-item.now-playing {
+            color: var(--theme-primary);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .track-item input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 13px;
+            height: 13px;
+            cursor: pointer;
+            accent-color: var(--theme-primary);
+        }
+
+        .track-item-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .message {
@@ -819,41 +872,43 @@
                         <div class="settings-section">
                             <h4>Music</h4>
                             <div class="settings-audio">
-                                <span class="track-name" id="trackName">Click play to start</span>
-                                <div class="audio-buttons">
-                                    <button class="icon-btn small" id="prevTrackBtn" title="Previous">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                            <rect x="5" y="4" width="2" height="16"/>
-                                            <polygon points="19 4 9 12 19 20 19 4"/>
+                                <div class="audio-controls-row">
+                                    <div class="audio-buttons">
+                                        <button class="icon-btn small" id="prevTrackBtn" title="Previous">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                <rect x="5" y="4" width="2" height="16"/>
+                                                <polygon points="19 4 9 12 19 20 19 4"/>
+                                            </svg>
+                                        </button>
+                                        <button class="icon-btn small" id="playPauseBtn" title="Play/Pause">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                <polygon points="5 3 19 12 5 21 5 3"/>
+                                            </svg>
+                                        </button>
+                                        <button class="icon-btn small" id="nextTrackBtn" title="Next">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                <polygon points="5 4 15 12 5 20 5 4"/>
+                                                <rect x="17" y="4" width="2" height="16"/>
+                                            </svg>
+                                        </button>
+                                        <button class="icon-btn small" id="repeatBtn" title="Repeat">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M17 2l4 4-4 4"/>
+                                                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                                                <path d="M7 22l-4-4 4-4"/>
+                                                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="audio-volume">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
                                         </svg>
-                                    </button>
-                                    <button class="icon-btn small" id="playPauseBtn" title="Play/Pause">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                            <polygon points="5 3 19 12 5 21 5 3"/>
-                                        </svg>
-                                    </button>
-                                    <button class="icon-btn small" id="nextTrackBtn" title="Next">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                            <polygon points="5 4 15 12 5 20 5 4"/>
-                                            <rect x="17" y="4" width="2" height="16"/>
-                                        </svg>
-                                    </button>
-                                    <button class="icon-btn small" id="repeatBtn" title="Repeat">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M17 2l4 4-4 4"/>
-                                            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                                            <path d="M7 22l-4-4 4-4"/>
-                                            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                                        </svg>
-                                    </button>
+                                        <input type="range" id="volumeSlider" min="0" max="100" value="30">
+                                    </div>
                                 </div>
-                                <div class="volume-row">
-                                    <input type="range" class="volume-slider-vertical" id="volumeSlider" min="0" max="100" value="30">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                                    </svg>
-                                </div>
+                                <div class="track-list" id="trackList"></div>
                             </div>
                         </div>
                     </div>

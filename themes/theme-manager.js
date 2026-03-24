@@ -181,6 +181,27 @@ export class ThemeManager {
     }
 
     /**
+     * Return all tracks with current state (for building UI)
+     */
+    getTracks() {
+        return this.audioController?.getTracks() || [];
+    }
+
+    /**
+     * Jump directly to a track by index
+     */
+    jumpToTrack(index) {
+        this.audioController?.jumpToTrack(index);
+    }
+
+    /**
+     * Enable or disable a track in the rotation
+     */
+    setTrackEnabled(index, enabled) {
+        this.audioController?.setTrackEnabled(index, enabled);
+    }
+
+    /**
      * Toggle dog companion visibility
      */
     toggleDog(visible) {
