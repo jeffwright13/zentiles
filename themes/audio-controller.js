@@ -47,8 +47,12 @@ export class AudioController {
         audio.loop = false;
         audio.volume = 0;
         
-        // Add error handling for failed loads
+        // Add error handling for failed loads.
+        // Guard against spurious errors fired when src is cleared during cleanup:
+        // setting src='' resolves to the page URL, which won't match trackUrl.
         audio.addEventListener('error', (e) => {
+            const resolvedTrackUrl = new URL(trackUrl, window.location.href).href;
+            if (audio.src !== resolvedTrackUrl) return;
             console.warn(`Audio track failed to load: ${trackUrl}`);
             this.handleTrackError(index);
         });
