@@ -42,6 +42,7 @@ classDiagram
         +undo() bool
         +clear_level()
         +clean_clear() bool
+        +rotate_current_piece() bool
         +swap_piece(slot) bool
         +get_valid_placements() list
         +has_valid_moves() bool
@@ -151,6 +152,7 @@ place_piece(origin: Tuple[int, int]) -> bool
 undo() -> bool
 clear_level() -> void
 clean_clear() -> bool
+rotate_current_piece() -> bool
 swap_piece(slot_index: int) -> bool
 get_valid_placements() -> List[Tuple[int, int]]
 has_valid_moves() -> bool
@@ -168,6 +170,7 @@ on_cell_selected(x: int, y: int)
 on_undo_requested()
 on_clear_requested()
 on_clean_clear_requested()
+on_rotate_requested()
 on_swap_requested(slot_index: int)
 on_pause_requested()
 ```

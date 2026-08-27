@@ -208,9 +208,9 @@
 
         .board-message {
             position: absolute;
-            top: 50%;
+            top: 8px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             white-space: nowrap;
             z-index: 5;
             font-size: 1.05rem;
@@ -489,6 +489,21 @@
 
         .toggle-switch.active::after {
             transform: translateX(20px);
+        }
+
+        .settings-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--theme-card-border);
+            color: var(--theme-text-light);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+
+        .settings-select option {
+            background: #1e1e28;
+            color: var(--theme-text-light);
         }
 
         .settings-audio {
@@ -864,6 +879,15 @@
                                 <span>Variety</span>
                                 <div class="toggle-switch" id="varietyToggle"></div>
                             </div>
+                            <div class="settings-row" title="Which tile of the current piece tracks your cursor while placing it">
+                                <span>Piece Grip</span>
+                                <select id="handleCornerSelect" class="settings-select">
+                                    <option value="upper-left">Upper-Left</option>
+                                    <option value="upper-right">Upper-Right (Steam-style)</option>
+                                    <option value="lower-left">Lower-Left</option>
+                                    <option value="lower-right">Lower-Right</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="settings-section">
                             <h4>Theme</h4>
@@ -962,6 +986,12 @@
                     <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
                 </svg>
                 Undo
+            </button>
+            <button class="btn" id="rotateBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Rotate
             </button>
             <button class="btn" id="clearBtn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

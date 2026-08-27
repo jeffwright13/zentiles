@@ -3,6 +3,7 @@ describe('Menu / Settings interactions', () => {
     // Minimal DOM required by ZenTilesApp.setupEventListeners()
     document.body.innerHTML = `
       <button id="undoBtn"></button>
+      <button id="rotateBtn"></button>
       <button id="clearBtn"></button>
       <button id="cleanBtn"></button>
       <button id="newGameBtn"></button>
@@ -33,6 +34,7 @@ describe('Menu / Settings interactions', () => {
     app.handleClick = jest.fn();
     app.swapPiece = jest.fn();
     app.undo = jest.fn();
+    app.rotatePiece = jest.fn();
     app.clearLevel = jest.fn();
     app.cleanClear = jest.fn();
     app.newGame = jest.fn();
