@@ -10,6 +10,10 @@ Urban Ivy is a grid-based tile placement puzzle game where players place pieces 
 - **Library**: 12 base piece shapes
 - **Transformations**: Can be rotated (0-3 times) and reflected
 - **Normalization**: Pieces are normalized so minimum (x,y) = (0,0)
+- **Grip corner**: The tile that tracks the cursor/finger while placing a
+  piece is configurable (Upper-Left, Upper-Right, Lower-Left, Lower-Right)
+  via Settings → Piece Grip. Default is Upper-Left; Upper-Right matches
+  Rockwell's Zentiles (Steam). Persisted per-browser independent of game save.
 
 ### Board
 - **Grid**: N×N boolean occupancy matrix
@@ -66,6 +70,18 @@ Contains all persistent game state:
 - **Cost**: 1 clean-clear charge
 - **Effect**: Clears board without resetting level progress
 - **Additional**: Clears undo history
+
+### Rotate
+- **Cost**: 1 rotate charge to unlock rotation for the current piece; once
+  unlocked, further rotations of that same piece are free until it is
+  placed or swapped away (the next piece requires another charge)
+- **Effect**: Rotates the current piece 90° per press, cycling through its
+  available orientations (up to 4; fewer for symmetric shapes such as a
+  single tile or 2×2 square, which simply look unchanged when rotated)
+- **Earn rate**: +1 charge every 3 levels, capped at 5 charges
+- Mirrors the "Rotate card" mechanic from Rockwell's Zentiles (Steam),
+  implemented here as a charge/button like Undo and Clean Clear rather than
+  a literal drawn card
 
 ### Swap Slots (Reserve)
 - **Unlock**: Based on max level reached

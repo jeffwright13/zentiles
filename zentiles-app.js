@@ -67,8 +67,20 @@ class Piece {
     }
 
     getFirstCellOffset() {
+        return this.getHandleOffset('upper-left');
+    }
+
+    getHandleOffset(corner = 'upper-left') {
         if (!this.cells || this.cells.length === 0) return [0, 0];
-        return this.cells[0];
+        const preferX = (corner === 'upper-right' || corner === 'lower-right') ? 'max' : 'min';
+        const preferY = (corner === 'lower-left' || corner === 'lower-right') ? 'max' : 'min';
+        return this.cells.reduce((best, cell) => {
+            const betterX = preferX === 'min' ? cell[0] < best[0] : cell[0] > best[0];
+            const sameX = cell[0] === best[0];
+            const betterY = preferY === 'min' ? cell[1] < best[1] : cell[1] > best[1];
+            if (betterX || (sameX && betterY)) return cell;
+            return best;
+        }, this.cells[0]);
     }
 }
 
@@ -178,6 +190,8 @@ class GameState {
         this.piecesPlaced = 0;
         this.undoCharges = 3;
         this.cleanClearCharges = 1;
+        this.rotateCharges = 0;
+        this.rotateUnlockedForCurrentPiece = false;
         this.reserveSlots = [null, null, null];
         this.reserveUsedThisTurn = false;
         this.pieceSpawnCounts = Array(12).fill(0);
@@ -208,6 +222,7 @@ class GameEngine {
     static SAVE_KEY = 'zentiles-save';
     static MAX_CLEAN_CLEAR_CHARGES = 5;
     static MAX_UNDO_CHARGES = 10;
+    static MAX_ROTATE_CHARGES = 5;
 
     constructor(state = null) {
         this.state = state || new GameState();
@@ -233,6 +248,8 @@ class GameEngine {
             state.piecesPlaced = data.piecesPlaced;
             state.undoCharges = data.undoCharges;
             state.cleanClearCharges = data.cleanClearCharges;
+            state.rotateCharges = data.rotateCharges || 0;
+            state.rotateUnlockedForCurrentPiece = data.rotateUnlockedForCurrentPiece || false;
             state.reserveUsedThisTurn = data.reserveUsedThisTurn;
             state.pieceSpawnCounts = data.pieceSpawnCounts;
             state.pieceSpawnTotal = data.pieceSpawnTotal;
@@ -298,6 +315,8 @@ class GameEngine {
                 piecesPlaced: s.piecesPlaced,
                 undoCharges: s.undoCharges,
                 cleanClearCharges: s.cleanClearCharges,
+                rotateCharges: s.rotateCharges,
+                rotateUnlockedForCurrentPiece: s.rotateUnlockedForCurrentPiece,
                 reserveUsedThisTurn: s.reserveUsedThisTurn,
                 pieceSpawnCounts: s.pieceSpawnCounts,
                 pieceSpawnTotal: s.pieceSpawnTotal,
@@ -396,6 +415,8 @@ class GameEngine {
         this.state.piecesPlaced = snapshot.piecesPlaced;
         this.state.undoCharges = snapshot.undoCharges;
         this.state.cleanClearCharges = snapshot.cleanClearCharges;
+        this.state.rotateCharges = snapshot.rotateCharges;
+        this.state.rotateUnlockedForCurrentPiece = snapshot.rotateUnlockedForCurrentPiece;
         this.state.reserveSlots = snapshot.reserveSlots;
         this.state.reserveUsedThisTurn = snapshot.reserveUsedThisTurn;
         this.state.pieceSpawnCounts = snapshot.pieceSpawnCounts;
@@ -444,8 +465,21 @@ class GameEngine {
         } else {
             this.state.reserveSlots[slotIndex] = this.state.currentPiece;
             this.state.currentPiece = storedPiece;
+            this.state.rotateUnlockedForCurrentPiece = false;
         }
         this.state.reserveUsedThisTurn = true;
+        return true;
+    }
+
+    rotateCurrentPiece() {
+        if (!this.state.rotateUnlockedForCurrentPiece) {
+            if (this.state.rotateCharges <= 0) {
+                return false;
+            }
+            this.state.rotateCharges--;
+            this.state.rotateUnlockedForCurrentPiece = true;
+        }
+        this.state.currentPiece.rotate(1);
         return true;
     }
 
@@ -486,7 +520,13 @@ class GameEngine {
                     this.onCleanClearEarned();
                 }
             }
-            
+            if (this.state.level % 3 === 0) {
+                if (this.state.rotateCharges < GameEngine.MAX_ROTATE_CHARGES) {
+                    this.state.rotateCharges++;
+                    this.onRotateChargeEarned();
+                }
+            }
+
             // Check for newly unlocked swap slots
             const previousUnlockedSlots = Math.min(3, Math.floor(previousLevel / 5));
             const currentUnlockedSlots = Math.min(3, Math.floor(this.state.level / 5));
@@ -513,6 +553,13 @@ class GameEngine {
         }
     }
 
+    onRotateChargeEarned() {
+        // This will be implemented by the Game class
+        if (this.onAchievementCallback) {
+            this.onAchievementCallback('rotate');
+        }
+    }
+
     onSwapSlotUnlocked(slotNumber) {
         // This will be implemented by the Game class
         if (this.onAchievementCallback) {
@@ -526,6 +573,7 @@ class GameEngine {
         const piece = new Piece(next.shapeIndex);
         piece.cells = JSON.parse(JSON.stringify(next.cells));
         this.state.currentPiece = piece;
+        this.state.rotateUnlockedForCurrentPiece = false;
         this.spawnNextPiece();
     }
 
@@ -583,6 +631,8 @@ class GameEngine {
 // ============================================================================
 
 class ZenTilesApp {
+    static HANDLE_CORNER_KEY = 'zentiles-handle-corner';
+
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -598,6 +648,7 @@ class ZenTilesApp {
         this.engine.onAchievementCallback = (type, data) => this.handleAchievement(type, data);
         
         this.cellSize = 68;
+        this.handleCorner = localStorage.getItem(ZenTilesApp.HANDLE_CORNER_KEY) || 'upper-left';
         this.hoverPos = null;
         this.pointerDownCell = null;
         this.validPlacements = [];
@@ -608,7 +659,8 @@ class ZenTilesApp {
 
         this._messageHideTimeoutId = null;
         this._persistentMessage = null;
-        
+        this._displayedKey = null;
+
         this.init();
     }
 
@@ -652,6 +704,7 @@ class ZenTilesApp {
 
         // Game control buttons
         document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+        document.getElementById('rotateBtn').addEventListener('click', () => this.rotatePiece());
         document.getElementById('clearBtn').addEventListener('click', () => this.clearLevel());
         document.getElementById('cleanBtn').addEventListener('click', () => this.cleanClear());
         document.getElementById('newGameBtn').addEventListener('click', () => {
@@ -728,6 +781,17 @@ class ZenTilesApp {
                 this.engine.state.variety = !this.engine.state.variety;
                 varietyToggle.classList.toggle('active', this.engine.state.variety);
                 this.engine.saveGame();
+            });
+        }
+
+        // Piece grip corner selector
+        const handleCornerSelect = document.getElementById('handleCornerSelect');
+        if (handleCornerSelect) {
+            handleCornerSelect.value = this.handleCorner;
+            handleCornerSelect.addEventListener('change', (e) => {
+                this.handleCorner = e.target.value;
+                localStorage.setItem(ZenTilesApp.HANDLE_CORNER_KEY, this.handleCorner);
+                this.render();
             });
         }
 
@@ -931,12 +995,12 @@ class ZenTilesApp {
     }
 
     cellToOrigin(cell) {
-        const [fx, fy] = this.engine.state.currentPiece.getFirstCellOffset();
+        const [fx, fy] = this.engine.state.currentPiece.getHandleOffset(this.handleCorner);
         return [cell[0] - fx, cell[1] - fy];
     }
 
     originToFirstCell(origin) {
-        const [fx, fy] = this.engine.state.currentPiece.getFirstCellOffset();
+        const [fx, fy] = this.engine.state.currentPiece.getHandleOffset(this.handleCorner);
         return [origin[0] + fx, origin[1] + fy];
     }
 
@@ -1020,6 +1084,16 @@ class ZenTilesApp {
         }
     }
 
+    rotatePiece() {
+        if (this.engine.rotateCurrentPiece()) {
+            this.engine.saveGame();
+            this.updateUI();
+            this.render();
+        } else {
+            this.showMessage('No rotate charges', 'warning');
+        }
+    }
+
     clearLevel() {
         this.engine.clearLevel();
         this.engine.saveGame();
@@ -1072,6 +1146,14 @@ class ZenTilesApp {
                 const slotNumber = data?.slotNumber || 1;
                 this.showMessage(`Swap slot ${slotNumber} unlocked!`, 'success', { durationMs: 3000 });
                 break;
+            case 'rotate':
+                const maxRotate = GameEngine.MAX_ROTATE_CHARGES;
+                const currentRotate = this.engine.state.rotateCharges;
+                const rotateMsg = currentRotate >= maxRotate
+                    ? `Rotate charge earned! (Maximum ${maxRotate} charges reached)`
+                    : `Rotate charge earned! (${currentRotate} charges)`;
+                this.showMessage(rotateMsg, 'info', { durationMs: 3000 });
+                break;
         }
     }
 
@@ -1104,8 +1186,10 @@ class ZenTilesApp {
         
         const undoBtn = document.getElementById('undoBtn');
         const cleanBtn = document.getElementById('cleanBtn');
+        const rotateBtn = document.getElementById('rotateBtn');
         undoBtn.disabled = state.undoCharges <= 0 || this.engine.undoHistory.length === 0;
         cleanBtn.disabled = state.cleanClearCharges <= 0;
+        rotateBtn.disabled = state.rotateCharges <= 0 && !state.rotateUnlockedForCurrentPiece;
 
         undoBtn.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1113,7 +1197,14 @@ class ZenTilesApp {
             </svg>
             Undo (${state.undoCharges})
         `;
-        
+
+        rotateBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Rotate (${state.rotateCharges})
+        `;
+
         cleanBtn.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
@@ -1409,11 +1500,19 @@ class ZenTilesApp {
     }
 
     clearMessage(persistentKey = null) {
-        if (persistentKey && this._persistentMessage?.key !== persistentKey) {
-            return;
+        if (persistentKey && this._persistentMessage?.key === persistentKey) {
+            this._persistentMessage = null;
+        } else if (!persistentKey) {
+            this._persistentMessage = null;
         }
 
-        this._persistentMessage = null;
+        // Only hide the currently-visible message if it's the one being cleared —
+        // a stale persistentKey clear must never clip an unrelated message that's
+        // showing right now (e.g. a "Board cleaned" toast shown right after a
+        // "no valid moves" banner was active).
+        if (persistentKey && this._displayedKey !== persistentKey) {
+            return;
+        }
 
         const messageEl = document.getElementById('message');
         if (!messageEl) return;
@@ -1423,6 +1522,7 @@ class ZenTilesApp {
             this._messageHideTimeoutId = null;
         }
 
+        this._displayedKey = null;
         messageEl.style.display = 'none';
     }
 
@@ -1442,6 +1542,7 @@ class ZenTilesApp {
             this._messageHideTimeoutId = null;
         }
 
+        this._displayedKey = persistentKey;
         messageEl.textContent = text;
         messageEl.className = `board-message message ${type}`;
         messageEl.style.display = 'block';
@@ -1450,10 +1551,12 @@ class ZenTilesApp {
             this._messageHideTimeoutId = setTimeout(() => {
                 this._messageHideTimeoutId = null;
                 if (this._persistentMessage) {
+                    this._displayedKey = this._persistentMessage.key;
                     messageEl.textContent = this._persistentMessage.text;
                     messageEl.className = `board-message message ${this._persistentMessage.type}`;
                     messageEl.style.display = 'block';
                 } else {
+                    this._displayedKey = null;
                     messageEl.style.display = 'none';
                 }
             }, durationMs);
