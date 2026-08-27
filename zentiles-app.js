@@ -293,6 +293,11 @@ class GameEngine {
                     piece.cells = p.cells;
                     return piece;
                 });
+                // Snapshots from saves made before the Rotate feature shipped
+                // won't have these fields — default them so undo() never
+                // assigns undefined (which corrupts to NaN on the next rotate).
+                s.rotateCharges = snap.rotateCharges || 0;
+                s.rotateUnlockedForCurrentPiece = snap.rotateUnlockedForCurrentPiece || false;
                 return s;
             });
 
@@ -415,8 +420,8 @@ class GameEngine {
         this.state.piecesPlaced = snapshot.piecesPlaced;
         this.state.undoCharges = snapshot.undoCharges;
         this.state.cleanClearCharges = snapshot.cleanClearCharges;
-        this.state.rotateCharges = snapshot.rotateCharges;
-        this.state.rotateUnlockedForCurrentPiece = snapshot.rotateUnlockedForCurrentPiece;
+        this.state.rotateCharges = snapshot.rotateCharges || 0;
+        this.state.rotateUnlockedForCurrentPiece = snapshot.rotateUnlockedForCurrentPiece || false;
         this.state.reserveSlots = snapshot.reserveSlots;
         this.state.reserveUsedThisTurn = snapshot.reserveUsedThisTurn;
         this.state.pieceSpawnCounts = snapshot.pieceSpawnCounts;
@@ -585,7 +590,8 @@ class GameEngine {
         firstPiece.rotate(Math.floor(this.random() * 4));
         if (this.random() < 0.5) firstPiece.reflect();
         this.state.currentPiece = firstPiece;
-        
+        this.state.rotateUnlockedForCurrentPiece = false;
+
         // Generate second piece using normal spawn logic
         this.spawnNextPiece();
     }
