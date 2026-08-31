@@ -200,17 +200,29 @@
         }
 
         .board-container {
-            position: relative;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
         }
 
+        .board-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board-message-wrapper {
+            position: relative;
+            width: 100%;
+            min-height: 2.5rem;
+            margin-bottom: 8px;
+        }
+
         .board-message {
-            display: block;
-            width: fit-content;
-            margin: 0 auto 16px;
-            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
             white-space: nowrap;
             font-size: 1.05rem;
         }
@@ -939,11 +951,14 @@
             </div>
         </header>
 
-        <div id="message" class="board-message message" style="display: none;"></div>
-
         <main class="game-area">
-            <div class="board-container">
-                <canvas id="gameCanvas"></canvas>
+            <div class="board-section">
+                <div class="board-message-wrapper">
+                    <div id="message" class="board-message message" style="display: none;"></div>
+                </div>
+                <div class="board-container">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
             </div>
             
             <div class="side-panel">
