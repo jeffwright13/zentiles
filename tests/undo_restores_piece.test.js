@@ -15,8 +15,13 @@ describe('Undo restores piece and board state', () => {
     const board = engine.state.board;
     board.clearBoard();
 
-    // Force current piece to be a single cell BEFORE capturing initial state
+    // Force current piece to be a single cell, and next piece to a known,
+    // guaranteed-different shape, BEFORE capturing initial state. Without
+    // pinning nextPiece, its shapeIndex is randomly generated and can also
+    // land on 0 (single-cell), making the "piece changed" assertion below
+    // flaky (~25% failure rate).
     engine.state.currentPiece = new window.Piece(0);
+    engine.state.nextPiece = new window.Piece(1);
     const initialPieceShape = engine.state.currentPiece.shapeIndex;
     const initialPieceCells = JSON.parse(JSON.stringify(engine.state.currentPiece.cells));
     const initialNextPieceShape = engine.state.nextPiece.shapeIndex;
