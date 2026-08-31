@@ -207,12 +207,11 @@
         }
 
         .board-message {
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
+            display: block;
+            width: fit-content;
+            margin: 0 auto 16px;
+            text-align: center;
             white-space: nowrap;
-            z-index: 5;
             font-size: 1.05rem;
         }
 
@@ -940,10 +939,11 @@
             </div>
         </header>
 
+        <div id="message" class="board-message message" style="display: none;"></div>
+
         <main class="game-area">
             <div class="board-container">
                 <canvas id="gameCanvas"></canvas>
-                <div id="message" class="board-message message" style="display: none;"></div>
             </div>
             
             <div class="side-panel">
